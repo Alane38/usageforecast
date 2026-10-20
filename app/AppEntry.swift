@@ -5,7 +5,6 @@ import SwiftUI
 @main
 struct Main {
     static func main() {
-        AppSupport.migrateLegacy()
         let application = NSApplication.shared
         let appDelegate = AppDelegate()
         application.delegate = appDelegate

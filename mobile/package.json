@@ -1,5 +1,5 @@
 {
-  "name": "claude-usage-mobile",
+  "name": "usageforecast-mobile",
   "private": true,
   "type": "module",
   "description": "Application mobile (PWA) et relais chiffré de UsageForecast",

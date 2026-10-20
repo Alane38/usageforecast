@@ -34,7 +34,7 @@ extension AppDelegate {
         usageManager.mobilePairingOverride = UsageManager.MobilePairing(id: pairing.id, cipherKey: SymmetricKey(data: pairing.secret))
         guard DevFlags.isSet("--demo-mobile") else { return }
         usageManager.mobileSyncEnabled = true
-        usageManager.mobileRelayText = "https://claude-usage-relay.exemple.workers.dev"
+        usageManager.mobileRelayText = "https://usageforecast-relay.exemple.workers.dev"
         usageManager.mobileStatus = "Envoyé (24 Ko chiffrés)."
         usageManager.mobileLastSuccess = AppClock.now.addingTimeInterval(-40)
     }

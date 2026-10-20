@@ -675,7 +675,7 @@ let vectorBlob = "oKGio6SlpqeoqaqrnToUSCmnbZ1YR-q8ZROsu1LR6TTezi9REKnTcKBV7_CgZQ
 // Ce même vecteur est vérifié côté téléphone (mobile/pwa/test/crypto.test.js) : les deux langages doivent s'entendre.
 check(MobileCrypto.seal(Data("{\"hello\":\"mobile\"}".utf8), key: vectorKey, nonce: vectorNonce) == vectorBlob, "mobile : vecteur de chiffrement AES-GCM fixe")
 check(MobileCrypto.open(vectorBlob, key: vectorKey).flatMap { String(data: $0, encoding: .utf8) } == "{\"hello\":\"mobile\"}", "mobile : déchiffrement du vecteur")
-check(MobileCrypto.writeToken(key: vectorKey) == "6b1a595277c20676f0184d811c30f626cbc89c753d8c80b4f8fd160c7e827a93", "mobile : jeton d'écriture HMAC fixe")
+check(MobileCrypto.writeToken(key: vectorKey) == "50122637362ade0cdda221d674609d8e18b9acf46499fa0edf6ec98b327a3e94", "mobile : jeton d'écriture HMAC fixe")
 check(MobileCrypto.open(vectorBlob, key: MobileCrypto.newKey()) == nil, "mobile : mauvaise clé -> refus")
 var tamperedBytes = MobileCrypto.data(fromBase64url: vectorBlob)!
 tamperedBytes[tamperedBytes.count - 1] ^= 0x01
@@ -749,39 +749,5 @@ check(StatuslineUsage.loadNewest(paths: [fileDir.appendingPathComponent("absent.
 check(StatuslineUsage.loadNewest(paths: [fileDir.appendingPathComponent("absent.json").path], now: nowForFiles) == nil, "statusline : aucun emplacement lisible -> nil")
 try? FileManager.default.removeItem(at: fileDir)
 
-
-// Migration du dossier de données : « ClaudeUsageBar » (avant 1.14) vers « UsageForecast ».
-func migrationHome(_ files: [String: [String]]) -> URL {
-    let home = FileManager.default.temporaryDirectory.appendingPathComponent("uf-home-\(UUID().uuidString)")
-    for (folder, names) in files {
-        let dir = home.appendingPathComponent("Library/Application Support/\(folder)")
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        for name in names { try? Data("\(folder)/\(name)".utf8).write(to: dir.appendingPathComponent(name)) }
-    }
-    return home
-}
-func supportFile(_ home: URL, _ folder: String, _ name: String) -> String? {
-    try? String(contentsOf: home.appendingPathComponent("Library/Application Support/\(folder)/\(name)"), encoding: .utf8)
-}
-let freshHome = migrationHome([:])
-check(AppSupport.migrateLegacy(home: freshHome) == .nothingToDo, "migration : rien à faire sans ancien dossier")
-let legacyHome = migrationHome(["ClaudeUsageBar": ["history.jsonl", "daily.jsonl", "forecast.json"]])
-check(AppSupport.migrateLegacy(home: legacyHome) == .moved(3), "migration : les 3 fichiers sont déplacés")
-check(supportFile(legacyHome, "UsageForecast", "daily.jsonl") == "ClaudeUsageBar/daily.jsonl", "migration : contenu conservé dans le nouveau dossier")
-check(!FileManager.default.fileExists(atPath: legacyHome.appendingPathComponent("Library/Application Support/ClaudeUsageBar").path), "migration : ancien dossier retiré une fois vide")
-check(AppSupport.migrateLegacy(home: legacyHome) == .nothingToDo, "migration : idempotente")
-let bothHome = migrationHome(["ClaudeUsageBar": ["history.jsonl", "daily.jsonl"], "UsageForecast": ["history.jsonl"]])
-check(AppSupport.migrateLegacy(home: bothHome) == .moved(1), "migration : ne déplace que ce qui manque")
-check(supportFile(bothHome, "UsageForecast", "history.jsonl") == "UsageForecast/history.jsonl", "migration : un fichier déjà présent n'est jamais remplacé")
-check(supportFile(bothHome, "ClaudeUsageBar", "history.jsonl") == "ClaudeUsageBar/history.jsonl", "migration : l'ancien fichier en doublon reste, rien n'est perdu")
-let secretsHome = migrationHome(["ClaudeUsageBar": []])
-let legacySecretsDir = secretsHome.appendingPathComponent("Library/Application Support/ClaudeUsageBar/secrets")
-try? FileManager.default.createDirectory(at: legacySecretsDir, withIntermediateDirectories: true)
-try? Data("x".utf8).write(to: legacySecretsDir.appendingPathComponent("bundle"))
-try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: legacySecretsDir.appendingPathComponent("bundle").path)
-_ = AppSupport.migrateLegacy(home: secretsHome)
-let movedSecret = secretsHome.appendingPathComponent("Library/Application Support/UsageForecast/secrets/bundle").path
-check((try? FileManager.default.attributesOfItem(atPath: movedSecret)[.posixPermissions] as? Int) == 0o600, "migration : le fichier de secrets garde ses droits 0600")
-for home in [freshHome, legacyHome, bothHome, secretsHome] { try? FileManager.default.removeItem(at: home) }
 
 exit(failures == 0 ? 0 : 1)

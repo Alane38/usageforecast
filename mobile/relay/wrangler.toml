@@ -1,5 +1,5 @@
 # Relais de la synchro mobile de UsageForecast. Déploiement : voir mobile/README.md (npm run deploy dans mobile/relay).
-name = "claude-usage-relay"
+name = "usageforecast-relay"
 main = "dist/worker.js"   # fabriqué par scripts/build-relay.mjs (le worker et l'application mobile)
 compatibility_date = "2026-10-01"
 

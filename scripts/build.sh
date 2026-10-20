@@ -33,12 +33,9 @@ swiftc -parse-as-library ${MODE_FLAGS[@]+"${MODE_FLAGS[@]}"} -sdk "$SDK" -target
 xattr -cr "$APP"
 # Identité stable : même règle de signature à chaque build, donc macOS garde les autorisations
 # (Keychain, Accessibilité, notifications). Sans certificat local, repli ad-hoc : elles seront redemandées.
-# « ClaudeUsageBar Local Signing » : ancien nom du certificat, encore accepté pour ne pas en recréer un.
-IDENTITY=""
-for candidate in "UsageForecast Local Signing" "ClaudeUsageBar Local Signing"; do
-    if security find-identity -p codesigning | grep -q "$candidate"; then IDENTITY="$candidate"; break; fi
-done
-if [ -n "$IDENTITY" ]; then
+# Certificat local (scripts/setup-signing.sh) ; UF_SIGNING_IDENTITY permet d'en utiliser un autre.
+IDENTITY="${UF_SIGNING_IDENTITY:-UsageForecast Local Signing}"
+if security find-identity -p codesigning | grep -q "$IDENTITY"; then
     codesign --force --deep --sign "$IDENTITY" "$APP"
 else
     echo "Pas de certificat local (scripts/setup-signing.sh) : signature ad-hoc, les permissions seront redemandées." >&2

@@ -41,7 +41,7 @@ struct MobileTab: View {
                 Text("Un petit service à toi (Cloudflare Worker, gratuit) qui ne garde que du texte chiffré pendant 30 jours.")
                     .font(.caption).foregroundColor(.secondary)
                 // En texte brut : sans cela macOS colore l'adresse comme un lien et on la prend pour une valeur saisie.
-                Text(verbatim: "Elle ressemble à : https://claude-usage-relay.ton-compte.workers.dev")
+                Text(verbatim: "Elle ressemble à : https://usageforecast-relay.ton-compte.workers.dev")
                     .font(.caption).foregroundColor(.secondary)
             }
             if usageManager.mobileSyncEnabled, usageManager.mobileRelay != nil { pairingSection }

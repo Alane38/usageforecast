@@ -8,8 +8,8 @@ const days = Number(process.argv[3] ?? 45);
 const scenario = process.argv[4] ?? "normal";
 // DEMO_FIXED=1 : clé et identifiant déterministes (démonstration locale uniquement), pour garder le même lien après un redémarrage du serveur.
 const fixed = process.env.DEMO_FIXED === "1";
-const key = fixed ? createHash("sha256").update("claude-usage-bar demo key").digest() : randomBytes(32);
-const id = fixed ? createHash("sha256").update("claude-usage-bar demo id").digest("hex").slice(0, 32) : randomBytes(16).toString("hex");
+const key = fixed ? createHash("sha256").update("usageforecast demo key").digest() : randomBytes(32);
+const id = fixed ? createHash("sha256").update("usageforecast demo id").digest("hex").slice(0, 32) : randomBytes(16).toString("hex");
 const b64url = (buffer) => Buffer.from(buffer).toString("base64url");
 
 const now = new Date();
@@ -70,7 +70,7 @@ const nonce = randomBytes(12);
 const cryptoKey = await webcrypto.subtle.importKey("raw", key, "AES-GCM", false, ["encrypt"]);
 const sealed = Buffer.from(await webcrypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, cryptoKey, new TextEncoder().encode(JSON.stringify(snapshot))));
 const blob = b64url(Buffer.concat([nonce, sealed]));
-const writeToken = createHmac("sha256", key).update("claude-usage-bar/write").digest("hex");
+const writeToken = createHmac("sha256", key).update("usageforecast/write").digest("hex");
 
 const response = await fetch(`${relay}/v1/${id}`, { method: "PUT", body: blob, headers: { "x-write-token": writeToken } });
 if (!response.ok) { console.error("Échec de l'envoi :", response.status, await response.text()); process.exit(1); }

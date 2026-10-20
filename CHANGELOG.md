@@ -5,7 +5,7 @@ Format : une section par version, la plus récente en haut.
 ## 1.14.0 : 20 octobre 2026
 
 ### Ajouté
-- **Nouveau nom : UsageForecast**, partout : application (`UsageForecast.app`), exécutable, icône, archives de release (`UsageForecast-X.Y.Z-arm64.zip`), dossier de données (`~/Library/Application Support/UsageForecast`). Au premier lancement, l'ancien dossier est **déplacé sans perte** (jamais de remplacement d'un fichier existant) ; l'installateur remplace l'ancienne application et la met à la Corbeille. L'identifiant interne `com.alane.usagebar`, donc le trousseau et les autorisations, ne change pas.
+- **Nouveau nom : UsageForecast**, partout : application (`UsageForecast.app`), exécutable, icône, archives de release (`UsageForecast-X.Y.Z-arm64.zip`), dossier de données (`~/Library/Application Support/UsageForecast`), relais mobile (`usageforecast-relay`).
 - **Assistant de premier lancement** : s'ouvre une fois si aucune donnée n'arrive, propose le réglage du statusline de Claude Code (à copier) ou le cookie claude.ai, et montre en direct si les données arrivent. Rouvrable depuis Réglages > Général.
 - **Statusline lu à un emplacement standard** (`~/Library/Application Support/UsageForecast/statusline.json`) en plus de l'ancien chemin : la copie la plus récente l'emporte.
 - **Installateur en une ligne** (`docs/install.sh` (servi à `https://alane38.github.io/usageforecast/install.sh`)) : télécharge la dernière release, vérifie son SHA-256, contrôle l'identifiant de l'archive, installe dans Applications. `--uninstall` retire l'app, `--purge` met aussi les données à la Corbeille.

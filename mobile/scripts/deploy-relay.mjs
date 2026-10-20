@@ -1,7 +1,7 @@
 // Déploie le relais (et l'application mobile qu'il sert) sur ton compte Cloudflare, gratuitement.
 // Usage : bun mobile/scripts/deploy-relay.mjs [--dry-run]
 // Prérequis : être connecté à Cloudflare (`npx wrangler login` une fois, ou la variable CLOUDFLARE_API_TOKEN).
-// Ce script crée un espace de stockage « VAULT » et publie un Worker « claude-usage-relay » : rien d'autre n'est touché.
+// Ce script crée un espace de stockage « VAULT » et publie un Worker « usageforecast-relay » : rien d'autre n'est touché.
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -14,7 +14,7 @@ const configPath = join(relayDir, "wrangler.toml");
 const dryRun = process.argv.includes("--dry-run");
 const PLACEHOLDER = "REMPLACE_PAR_LE_DEPLOIEMENT";
 // Titre des nouveaux espaces ; « VAULT » est le titre des premiers déploiements, toujours reconnu.
-const TITLES = ["claude-usage-relay-vault", "VAULT"];
+const TITLES = ["usageforecast-relay-vault", "VAULT"];
 
 const say = (text) => console.log(text);
 const fail = (text, code = 1) => { console.error(`\n✗ ${text}`); process.exit(code); };
@@ -32,7 +32,7 @@ if (dryRun) {
   say("\nMode essai : rien n'est envoyé à Cloudflare. Étapes à venir :");
   say("  2/5  vérifier la connexion (wrangler whoami)");
   say("  3/5  réutiliser ou créer l'espace de stockage VAULT (son identifiant reste dans relay/dist, hors du dépôt)");
-  say("  4/5  publier le Worker « claude-usage-relay »");
+  say("  4/5  publier le Worker « usageforecast-relay »");
   say("  5/5  contrôler que la page d'accueil répond, puis afficher l'adresse à coller dans UsageForecast > Réglages > Mobile");
   process.exit(0);
 }

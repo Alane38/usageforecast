@@ -32,7 +32,7 @@ enum MobileCrypto {
 
     /// Jeton qui prouve qu'on est l'écrivain du coffre : HMAC de la clé, que le téléphone peut aussi recalculer mais qui ne dévoile pas la clé.
     static func writeToken(key: SymmetricKey) -> String {
-        let mac = HMAC<SHA256>.authenticationCode(for: Data("claude-usage-bar/write".utf8), using: key)
+        let mac = HMAC<SHA256>.authenticationCode(for: Data("usageforecast/write".utf8), using: key)
         return mac.map { String(format: "%02x", $0) }.joined()
     }
 
@@ -40,8 +40,8 @@ enum MobileCrypto {
     /// `mobile/scripts/seed-demo.mjs` avec DEMO_FIXED=1, pour qu'un Mac de démonstration et un téléphone de démonstration s'entendent.
     static func demoPairing() -> (id: String, secret: Data) {
         func digest(_ label: String) -> [UInt8] { Array(SHA256.hash(data: Data(label.utf8))) }
-        let id = digest("claude-usage-bar demo id").map { String(format: "%02x", $0) }.joined().prefix(32)
-        return (String(id), Data(digest("claude-usage-bar demo key")))
+        let id = digest("usageforecast demo id").map { String(format: "%02x", $0) }.joined().prefix(32)
+        return (String(id), Data(digest("usageforecast demo key")))
     }
 
     // MARK: - Chiffrement

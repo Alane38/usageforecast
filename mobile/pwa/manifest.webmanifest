@@ -1,6 +1,6 @@
 {
-  "name": "Claude Usage",
-  "short_name": "Claude Usage",
+  "name": "UsageForecast",
+  "short_name": "UsageForecast",
   "description": "Surveille ton usage de Claude depuis ton téléphone, chiffré de bout en bout.",
   "lang": "fr",
   "start_url": "/",

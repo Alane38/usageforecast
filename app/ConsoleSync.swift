@@ -29,7 +29,7 @@ extension UsageManager {
     func saveConsoleCookie(_ cookie: String) {
         consoleCookie = cookie
         if !Self.secrets.write(cookie, account: Self.consoleAccount) {
-            NSLog("ClaudeUsage: secret storage write failed for the Console session")
+            NSLog("UsageForecast : écriture du secret de la Console impossible")
         }
     }
 

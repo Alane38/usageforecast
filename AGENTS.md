@@ -2,7 +2,6 @@
 
 Application de barre de menus macOS (SwiftUI, sans Xcode) qui suit l'usage de Claude (session 5 h, semaine, crédits API), avec prévisions,
 budget du jour, statistiques, historique local et **synchro chiffrée vers une application mobile (PWA)**. Projet personnel (licence MIT).
-Contexte long, décisions et pièges : `~/.brain/projects/claude-usage-bar/claude-usage-bar.md` (à lire en premier).
 
 ## Structure
 

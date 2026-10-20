@@ -7,8 +7,6 @@ set -eu
 REPO="Alane38/usageforecast"
 BUNDLE_ID="com.alane.usagebar"
 APP_NAME="UsageForecast.app"
-# Anciennes versions (avant 1.14) : même application sous un autre nom, remplacée à l'installation.
-LEGACY_APP="/Applications/ClaudeUsageBar.app"
 # USAGEFORECAST_DEST : dossier d'installation de remplacement (tests) ; sans quitter ni ouvrir l'app.
 DEST="${USAGEFORECAST_DEST:-/Applications/$APP_NAME}"
 DATA="$HOME/Library/Application Support/UsageForecast"
@@ -24,14 +22,12 @@ to_trash() {
 quit_app() {
     [ -z "${USAGEFORECAST_DEST:-}" ] || return 0
     pkill -x UsageForecast 2>/dev/null || true
-    pkill -x ClaudeUsageBar 2>/dev/null || true
     sleep 1
 }
 
 if [ "${1:-}" = "--uninstall" ]; then
     quit_app
     to_trash "$DEST"
-    [ -n "${USAGEFORECAST_DEST:-}" ] || to_trash "$LEGACY_APP"
     say "UsageForecast est à la Corbeille."
     if [ "${2:-}" = "--purge" ]; then
         to_trash "$DATA"
@@ -74,7 +70,6 @@ id=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$found/Contents/Inf
 
 quit_app
 to_trash "$DEST"
-[ -n "${USAGEFORECAST_DEST:-}" ] || to_trash "$LEGACY_APP"
 ditto "$found" "$DEST"
 say "Installé dans $DEST (version $version)."
 [ -n "${USAGEFORECAST_DEST:-}" ] || open "$DEST"
