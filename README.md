@@ -71,6 +71,6 @@ Les issues et suggestions sont bienvenues. Les fichiers de code restent sous 200
 
 ## Licence et avertissement
 
-Licence **MIT** : voir [LICENSE](LICENSE), qui conserve les mentions de copyright de toutes les personnes dont le code figure dans ce dépôt.
+Licence **MIT** : voir [LICENSE](LICENSE).
 
 Ce projet n'est ni affilié à Anthropic ni approuvé par Anthropic. « Claude » est une marque d'Anthropic. L'app s'appuie sur des points d'accès internes de claude.ai et de la Console qui peuvent changer sans préavis : utilisation à tes risques.
