@@ -1,8 +1,13 @@
 import SwiftUI
 
-private struct PopoverHeightKey: PreferenceKey {
+/// Remonte la hauteur réelle du contenu pour que le popover épouse sa taille sans dépasser le plafond.
+private struct ContentHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private func openSettingsWindow() {
+    (NSApp.delegate as? AppDelegate)?.openSettings()
 }
 
 /// Contenu du popover : en-tête, la disposition choisie, détails secondaires, statut des services, fraîcheur.
@@ -12,18 +17,28 @@ struct PopoverView: View {
     @State private var measuredHeight: CGFloat = 250
     @Environment(\.colorScheme) private var colorScheme
 
+    private let width: CGFloat = 360
     private let maxHeight: CGFloat = 640
+    private let minHeight: CGFloat = 100
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             content
                 .padding(16)
-                .background(GeometryReader { Color.clear.preference(key: PopoverHeightKey.self, value: $0.size.height) })
+                .background(GeometryReader { proxy in
+                    Color.clear.preference(key: ContentHeightKey.self, value: proxy.size.height)
+                })
         }
-        .frame(width: 360, height: min(max(measuredHeight, 100), maxHeight))
-        .background(colorScheme == .dark ? Color(red: 0.07, green: 0.07, blue: 0.08).opacity(0.3) : Color.white.opacity(0.85))
-        .onPreferenceChange(PopoverHeightKey.self) { if $0 > 0 { measuredHeight = $0 } }
+        .frame(width: width, height: min(max(measuredHeight, minHeight), maxHeight))
+        .background(backdrop)
+        .onPreferenceChange(ContentHeightKey.self) { height in
+            if height > 0 { measuredHeight = height }
+        }
         .onAppear { usageManager.updatePercentages() }
+    }
+
+    private var backdrop: Color {
+        colorScheme == .dark ? Color(red: 0.07, green: 0.07, blue: 0.08).opacity(0.3) : Color.white.opacity(0.85)
     }
 
     private var content: some View {
@@ -33,15 +48,7 @@ struct PopoverView: View {
                 Text(error).font(.caption).foregroundColor(.orange)
             }
             if usageManager.hasFetchedData {
-                switch usageManager.popoverLayout {
-                case .gauges: GaugesLayout(usageManager: usageManager)
-                case .cards:  CardsLayout(usageManager: usageManager)
-                }
-                WeekPlanDisclosure(usageManager: usageManager)
-                HistoryDisclosure(usageManager: usageManager)
-                ModelDetails(usageManager: usageManager)
-                ExtraUsageRow(usageManager: usageManager)
-                LimitResetsLine(usageManager: usageManager)
+                dataSections
             } else {
                 onboarding
             }
@@ -49,24 +56,39 @@ struct PopoverView: View {
                 Divider()
                 StatusSection(statusManager: statusManager)
             }
-            if let update = usageManager.availableUpdate { updateBanner(update) }
-            if usageManager.hasFetchedData { footer }
+            if let update = usageManager.availableUpdate {
+                UpdateBanner(usageManager: usageManager, update: update)
+            }
+            if usageManager.hasFetchedData { freshness }
         }
+    }
+
+    @ViewBuilder
+    private var dataSections: some View {
+        switch usageManager.popoverLayout {
+        case .gauges: GaugesLayout(usageManager: usageManager)
+        case .cards: CardsLayout(usageManager: usageManager)
+        }
+        WeekPlanDisclosure(usageManager: usageManager)
+        HistoryDisclosure(usageManager: usageManager)
+        ModelDetails(usageManager: usageManager)
+        ExtraUsageRow(usageManager: usageManager)
+        LimitResetsLine(usageManager: usageManager)
     }
 
     private var header: some View {
         HStack {
             Text(Brand.name).font(.headline)
             Spacer()
-            iconButton("arrow.clockwise", help: "Actualiser") {
+            toolbarButton("arrow.clockwise", help: "Actualiser") {
                 usageManager.fetchUsage()
                 statusManager.fetch()
             }
-            iconButton("gearshape", help: "Réglages") { (NSApp.delegate as? AppDelegate)?.openSettings() }
+            toolbarButton("gearshape", help: "Réglages", action: openSettingsWindow)
         }
     }
 
-    private func iconButton(_ symbol: String, help: String, action: @escaping () -> Void) -> some View {
+    private func toolbarButton(_ symbol: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 13)).foregroundColor(Color.secondaryText)
         }
@@ -80,56 +102,26 @@ struct PopoverView: View {
             Text("Connecte ta session claude.ai dans les réglages, ou lance Claude Code pour lire ses limites.")
                 .font(.caption)
                 .foregroundColor(Color.secondaryText)
-            Button("Ouvrir les réglages") { (NSApp.delegate as? AppDelegate)?.openSettings() }
+            Button("Ouvrir les réglages", action: openSettingsWindow)
                 .controlSize(.small)
         }
         .popoverCard()
     }
 
-    private func updateBanner(_ update: ReleaseInfo) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Version \(update.version) disponible").font(.system(size: 13, weight: .medium))
-                    Text("Tu as la \(usageManager.currentVersion).").font(.caption).foregroundColor(Color.secondaryText)
-                }
-                Spacer()
-                updateButtons(update)
-            }
-            switch usageManager.updateInstallState {
-            case .idle: EmptyView()
-            case .working(let step):
-                HStack(spacing: 6) { ProgressView().controlSize(.small); Text(step).font(.caption).foregroundColor(Color.secondaryText) }
-            case .failed(let message):
-                Text(message).font(.caption).foregroundColor(UsageTone.danger.color)
-            }
-        }
-        .popoverCard()
-    }
-
-    @ViewBuilder
-    private func updateButtons(_ update: ReleaseInfo) -> some View {
-        let isWorking: Bool = { if case .working = usageManager.updateInstallState { return true } else { return false } }()
-        HStack(spacing: 6) {
-            Button("Notes") { NSWorkspace.shared.open(update.pageURL) }.controlSize(.small)
-            if update.zipURL != nil {
-                Button("Installer") { usageManager.installUpdate() }.controlSize(.small).disabled(isWorking)
-            }
-        }
-    }
-
-    private var footer: some View {
-        let stale = SyncHelpers.isStale(usageManager.lastUpdated)
+    private var freshness: some View {
+        let isStale = SyncHelpers.isStale(usageManager.lastUpdated)
         let source = usageManager.usageSource == "claude.ai" ? "claude.ai" : "statusline"
+        let slowedNote = usageManager.isRefreshSlowed ? " · ralenti (5 min)" : ""
+        let age = SyncHelpers.age(since: usageManager.lastUpdated).withCapitalInitial
         return HStack(spacing: 6) {
-            Circle().fill(stale ? Color.orange : Color.green).frame(width: 7, height: 7)
-            Text("\(SyncHelpers.age(since: usageManager.lastUpdated).capitalizedFirst) · \(source)\(usageManager.isRefreshSlowed ? " · ralenti (5 min)" : "")")
+            Circle().fill(isStale ? Color.orange : Color.green).frame(width: 7, height: 7)
+            Text("\(age) · \(source)\(slowedNote)")
                 .font(.caption)
-                .foregroundColor(stale ? .orange : Color.secondaryText)
+                .foregroundColor(isStale ? .orange : Color.secondaryText)
         }
     }
 }
 
 private extension String {
-    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
+    var withCapitalInitial: String { prefix(1).uppercased() + dropFirst() }
 }
