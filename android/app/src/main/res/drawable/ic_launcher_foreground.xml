@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L'icône « maskable » de la PWA occupe la zone visible (72 dp sur 108) de l'icône adaptative. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/ic_launcher_foreground_art"
+    android:insetBottom="16.67%"
+    android:insetLeft="16.67%"
+    android:insetRight="16.67%"
+    android:insetTop="16.67%" />
