@@ -1,0 +1,13 @@
+{
+  "name": "claude-usage-mobile",
+  "private": true,
+  "type": "module",
+  "description": "Application mobile (PWA) et relais chiffré de UsageForecast",
+  "scripts": {
+    "test": "bun test",
+    "build": "bun scripts/build-relay.mjs",
+    "dev": "bun scripts/dev-server.mjs 8788",
+    "seed": "DEMO_FIXED=1 bun scripts/seed-demo.mjs http://localhost:8788",
+    "deploy": "bun scripts/deploy-relay.mjs"
+  }
+}

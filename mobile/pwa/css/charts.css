@@ -1,0 +1,16 @@
+svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { fill: var(--ink-2); font: 11px system-ui, sans-serif; }
+.chart .strong { fill: var(--ink); font-weight: 600; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .axis { stroke: var(--ink-2); stroke-opacity: 0.35; stroke-width: 1; }
+.chart .bar-solid { fill: var(--accent); }
+.chart .bar-light { fill: var(--accent-soft); }
+.chart .bar-gone { fill: var(--ink-2); fill-opacity: 0.25; }
+.chart .avg { stroke: var(--ink); stroke-opacity: 0.45; stroke-width: 1; }
+.chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .wash { fill: var(--accent); fill-opacity: 0.1; }
+.chart .end-ring { fill: var(--card); } .chart .end-dot { fill: var(--accent); }
+.chart .pill { fill: var(--card); fill-opacity: 0.92; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart g[aria-pressed="true"] .bar-solid, .chart g[aria-pressed="true"] .bar-light { stroke: var(--ink); stroke-width: 2; }
+.chart .cursor { stroke: var(--ink); stroke-opacity: 0.5; }

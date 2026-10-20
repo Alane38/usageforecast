@@ -1,0 +1,9 @@
+# Relais de la synchro mobile de UsageForecast. Déploiement : voir mobile/README.md (npm run deploy dans mobile/relay).
+name = "claude-usage-relay"
+main = "dist/worker.js"   # fabriqué par scripts/build-relay.mjs (le worker et l'application mobile)
+compatibility_date = "2026-10-01"
+
+# Un espace de stockage clé-valeur pour les coffres chiffrés. L'identifiant est renseigné par scripts/deploy-relay.mjs.
+[[kv_namespaces]]
+binding = "VAULT"
+id = "REMPLACE_PAR_LE_DEPLOIEMENT"

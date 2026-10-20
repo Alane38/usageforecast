@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UsageForecast : ne tombe plus à court de Claude</title>
+<meta name="description" content="UsageForecast affiche tes limites Claude dans la barre de menu du Mac et prévoit où tu en seras. Alertes, budget du jour, historique et app mobile. Gratuit, open source, sans compte.">
+<meta property="og:title" content="UsageForecast : ne tombe plus à court de Claude">
+<meta property="og:description" content="Limites Claude, prévisions et alertes dans la barre de menu. Gratuit et open source.">
+<meta property="og:image" content="https://alane38.github.io/usageforecast/img/popover-sombre.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#0b0c0e;--bg2:#101215;--panel:#15181c;--line:#262a30;--text:#eceef1;--muted:#9aa2ad;--accent:#43c75a;--accent-ink:#06210d;--accent-soft:rgba(67,199,90,.12);--code:#08090b}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:17px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+.topbar{position:sticky;top:0;z-index:10;background:rgba(11,12,14,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:650;color:var(--text);text-decoration:none}
+.brand img{width:28px;height:28px;border-radius:7px}
+nav{display:flex;align-items:center;gap:20px}
+nav a{color:var(--muted);text-decoration:none;font-size:15px}
+nav a:hover{color:var(--text)}
+.gh{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--text);background:var(--panel)}
+.gh span{color:var(--muted);font-size:13.5px}
+.hero{text-align:center;padding:64px 0 28px}
+.pill{display:inline-block;font-size:13.5px;color:var(--accent);background:var(--accent-soft);border:1px solid rgba(67,199,90,.3);border-radius:99px;padding:4px 14px;margin-bottom:22px}
+h1{font-size:clamp(34px,6vw,60px);line-height:1.08;letter-spacing:-.02em;margin:0 auto 18px;max-width:16em;font-weight:700}
+h1 em{font-style:normal;color:var(--accent)}
+.lead{color:var(--muted);font-size:clamp(17px,2.2vw,21px);max-width:36em;margin:0 auto 30px}
+.install{max-width:720px;margin:0 auto;text-align:left}
+.seg{display:inline-flex;gap:2px;padding:3px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;margin-bottom:10px}
+.seg button{all:unset;cursor:pointer;padding:6px 14px;font-size:14px;color:var(--muted);border-radius:7px}
+.seg button[aria-selected="true"]{background:var(--panel);color:var(--text);box-shadow:0 0 0 1px var(--line)}
+.term{display:none;align-items:center;gap:6px;background:var(--code);border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 16px}
+.term.on{display:flex}
+.term .line{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;scrollbar-width:none;font:15px/44px ui-monospace,SFMono-Regular,Menlo,monospace;color:#d7f5dd}
+.term .line::-webkit-scrollbar{display:none}
+.term .line::before{content:"$ ";color:var(--muted)}
+.term.plain .line{white-space:normal;font:15px/1.5 system-ui,sans-serif;color:var(--muted);-webkit-mask-image:none;mask-image:none;padding:8px 0}
+.term.plain .line::before{content:""}
+.ico{all:unset;cursor:pointer;display:grid;place-items:center;width:44px;height:44px;border-radius:9px;color:var(--muted);flex:none}
+.ico:hover{background:var(--panel);color:var(--text)}
+.ico svg{width:20px;height:20px}
+.ico .ok{display:none;color:var(--accent)}
+.ico.done .ok{display:block}.ico.done .cp{display:none}
+.mobile-only{display:none;text-align:center;margin:14px 0 0;color:var(--muted);font-size:14.5px}
+.mobile-only button{margin-top:8px}
+button.copy,.btn{font:inherit;font-size:14.5px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:8px;padding:8px 14px;text-decoration:none;display:inline-block}
+button.copy:hover,.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:650}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:22px 0 0}
+.trust{display:flex;gap:8px 22px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:14.5px;margin:22px 0 0;padding:0;list-style:none}
+.trust li::before{content:"✓ ";color:var(--accent)}
+.stage{margin:44px auto 0;display:flex;justify-content:center;gap:18px;align-items:flex-start}
+.stage img{border-radius:14px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.stage .main{width:min(360px,62%)}
+.stage .side{width:min(360px,62%);margin-top:40px}
+section{padding:72px 0}
+.alt{background:var(--bg2);border-block:1px solid var(--line)}
+h2{font-size:clamp(26px,4vw,38px);line-height:1.15;letter-spacing:-.015em;margin:0 0 10px;font-weight:700}
+.sub{color:var(--muted);margin:0 0 34px;max-width:40em}
+.center{text-align:center}.center .sub{margin-inline:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px}
+.card h3{margin:0 0 6px;font-size:18px}
+.card p{margin:0;color:var(--muted);font-size:15.5px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:44px;align-items:center}
+.split.rev>:first-child{order:2}
+.split img{width:100%;border-radius:14px;border:1px solid var(--line)}
+.split ul{padding-left:20px;color:var(--muted);margin:14px 0 0}
+.split li{margin-bottom:6px}
+.vs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.vs .card h3{font-size:16px;color:var(--muted);font-weight:600;margin-bottom:12px}
+.vs .good{border-color:rgba(67,199,90,.4);background:linear-gradient(180deg,var(--accent-soft),var(--panel))}
+.vs .good h3{color:var(--accent)}
+.vs ul{margin:0;padding:0;list-style:none}
+.vs li{padding:6px 0;border-top:1px solid var(--line);font-size:15.5px;color:var(--muted)}
+.vs .good li{color:var(--text)}
+.vs li:first-child{border-top:0}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;counter-reset:s}
+.steps .card{counter-increment:s;position:relative}
+.steps .card::before{content:counter(s);display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;margin-bottom:12px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:600}
+details p{color:var(--muted);margin:10px 0 0}
+.final{text-align:center;padding:84px 0}
+footer{border-top:1px solid var(--line);padding:28px 0 48px;color:var(--muted);font-size:14.5px}
+footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media(max-width:800px){.split,.vs{grid-template-columns:minmax(0,1fr)}.split.rev>:first-child{order:0}.stage .side{display:none}.stage .main{width:min(340px,100%)}nav a:not(.gh){display:none}section{padding:52px 0}.mobile-only{display:block}.term .line{font-size:14px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}.term.plain .line{-webkit-mask-image:none;mask-image:none}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="wrap">
+  <a class="brand" href="#"><img src="icon-192.png" alt="">UsageForecast</a>
+  <nav>
+    <a href="#fonctions">Fonctions</a><a href="#confidentialite">Confidentialité</a><a href="#faq">Questions</a>
+    <a class="gh" href="https://github.com/Alane38/usageforecast">GitHub <span id="stars"></span></a>
+  </nav>
+</div></div>
+
+<main>
+<div class="wrap hero">
+  <span class="pill">Gratuit · Open source · Sans compte</span>
+  <h1>Ne tombe plus à court de <em>Claude</em> en pleine tâche.</h1>
+  <p class="lead">UsageForecast affiche tes limites dans la barre de menu du Mac et te dit où tu en seras : fin de semaine, budget du jour, heure d'atteinte de 100 %. Avec des alertes claires et une app pour ton téléphone.</p>
+
+  <div class="install" role="region" aria-label="Installation">
+    <div class="seg" role="tablist">
+      <button role="tab" aria-selected="true" data-pane="p1">Terminal</button>
+      <button role="tab" aria-selected="false" data-pane="p2">Télécharger</button>
+    </div>
+    <div class="term on" id="p1"><div class="line" id="p1c" tabindex="0">curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh</div><button class="ico" type="button" data-copy="p1c" aria-label="Copier la commande"><svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></button></div>
+    <div class="term plain" id="p2"><div class="line">Télécharge le .zip de la dernière version, décompresse-le et glisse l'app dans Applications.</div></div>
+    <div class="mobile-only">Tu es sur ton téléphone ? Envoie-toi le lien pour l'installer depuis ton Mac.<br><button class="copy" type="button" id="share">Envoyer le lien à mon Mac</button></div>
+  </div>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger pour Mac</a>
+    <a class="btn" href="https://github.com/Alane38/usageforecast">Voir le code</a>
+  </div>
+  <ul class="trust">
+    <li>macOS 13+, Apple Silicon</li><li>Empreinte SHA-256 vérifiée</li><li>Licence MIT</li><li>Aucune télémétrie</li>
+  </ul>
+
+  <div class="stage">
+    <img class="main" src="img/popover-sombre.png" alt="Fenêtre UsageForecast : session à 8 %, semaine à 37 %, crédits API et historique 24 h">
+    <img class="side" src="img/popover-clair.png" alt="La même fenêtre en thème clair, disposition en cartes">
+  </div>
+</div>
+
+<section class="alt" id="fonctions"><div class="wrap">
+  <div class="center">
+    <h2>Un compteur qui regarde devant</h2>
+    <p class="sub">Savoir que tu es à 37 % ne sert à rien si tu ne sais pas où ça mène. UsageForecast répond à la vraie question.</p>
+  </div>
+  <div class="vs">
+    <div class="card"><h3>Sans UsageForecast</h3><ul>
+      <li>Ouvrir claude.ai/settings pour voir tes limites</li>
+      <li>Découvrir la limite quand elle te coupe</li>
+      <li>Deviner si ton rythme de la semaine tient</li>
+      <li>Aucune trace de tes habitudes</li></ul></div>
+    <div class="card good"><h3>Avec UsageForecast</h3><ul>
+      <li>Tes limites toujours visibles dans la barre de menu</li>
+      <li>Une alerte avant la limite, avec l'heure du reset</li>
+      <li>« 9 % utilisés sur 23 % conseillés » pour aujourd'hui</li>
+      <li>Un historique et des statistiques par jour de la semaine</li></ul></div>
+  </div>
+</div></section>
+
+<section><div class="wrap split">
+  <div>
+    <h2>Prévisions et budget du jour</h2>
+    <p class="sub" style="margin-bottom:0">Au rythme actuel, tu finis la session à combien ? la semaine à combien ? Un repère sur chaque jauge montre si tu es en dessous ou au-dessus du rythme.</p>
+    <ul>
+      <li>Estimation à la fin de la session et de la semaine</li>
+      <li>Heure à laquelle tu atteindrais 100 %</li>
+      <li>Planning de la semaine, jour par jour</li>
+      <li>Alertes explicites : seuil, rythme trop rapide, limite atteinte</li>
+    </ul>
+  </div>
+  <img src="img/previsions.png" alt="Planning de la semaine avec le budget conseillé par jour">
+</div></section>
+
+<section class="alt"><div class="wrap split rev">
+  <div>
+    <h2>Ton rythme, en clair</h2>
+    <p class="sub" style="margin-bottom:0">Un journal quotidien gardé 400 jours et des statistiques par jour de la semaine : quand tu travailles, quand tu consommes, comment cette semaine se compare aux précédentes.</p>
+    <ul>
+      <li>Courbe minute par minute sur 24 h</li>
+      <li>Moyennes par jour, seulement avec assez de données</li>
+      <li>Crédits API et dépense du mois (Max et Team)</li>
+    </ul>
+  </div>
+  <img src="img/statistiques.png" alt="Statistiques par jour de la semaine">
+</div></section>
+
+<section id="confidentialite"><div class="wrap">
+  <div class="center">
+    <h2>Tes données restent chez toi</h2>
+    <p class="sub">Pas de compte, pas de serveur du projet, pas de télémétrie. Le code est ouvert : tu peux tout vérifier.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Source officielle d'abord</h3><p>Avec Claude Code, l'app lit les limites que Claude Code transmet à son statusline : ni cookie, ni réseau.</p></div>
+    <div class="card"><h3>Cookies dans le trousseau</h3><p>Si tu passes par claude.ai ou la Console, les cookies vont dans le trousseau macOS, jamais dans un fichier ni un journal.</p></div>
+    <div class="card"><h3>Téléphone chiffré de bout en bout</h3><p>Synchro désactivée par défaut. Activée, tout est chiffré (AES-256-GCM) sur ton Mac : le relais, que tu héberges toi-même, ne voit que du texte chiffré.</p></div>
+  </div>
+</div></section>
+
+<section class="alt"><div class="wrap">
+  <div class="center"><h2>Prêt en trois minutes</h2><p class="sub">Une commande, un choix, c'est tout.</p></div>
+  <div class="steps">
+    <div class="card"><h3>Installe</h3><p>Colle la commande dans le Terminal. L'archive est vérifiée avant d'être installée, l'icône apparaît dans la barre de menu.</p></div>
+    <div class="card"><h3>Choisis ta source</h3><p>L'assistant de démarrage te propose le réglage Claude Code à copier, ou ton compte claude.ai.</p></div>
+    <div class="card"><h3>Laisse-le veiller</h3><p>Active les alertes et, si tu veux, la synchro mobile. Les mises à jour se font en un clic.</p></div>
+  </div>
+</div></section>
+
+<section id="faq"><div class="wrap" style="max-width:760px">
+  <h2>Questions</h2><p class="sub">Les réponses courtes.</p>
+  <details><summary>C'est vraiment gratuit ?</summary><p>Oui. Le code est ouvert, sous licence MIT. Le relais mobile tient dans l'offre gratuite de Cloudflare.</p></details>
+  <details><summary>Ça marche sans Claude Code ?</summary><p>Oui, avec le cookie de ta session claude.ai collé dans les Réglages. L'assistant de démarrage t'explique les deux voies.</p></details>
+  <details><summary>Et sur Windows ou Linux ?</summary><p>Pas pour l'instant : l'app vit dans la barre de menu de macOS. L'application mobile, elle, s'installe depuis le navigateur d'un téléphone Android.</p></details>
+  <details><summary>Pourquoi macOS me demande un mot de passe après une mise à jour ?</summary><p>Les versions ne sont pas notarisées par Apple : le certificat est auto-signé, donc macOS redemande l'accès au trousseau à chaque nouvelle version. Un compte développeur Apple le supprimerait.</p></details>
+  <details><summary>Comment désinstaller ?</summary><p>Dans le Terminal : <code>curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh -s -- --uninstall</code>. L'app va à la Corbeille et tes données restent ; ajoute <code>--purge</code> pour les mettre aussi à la Corbeille.</p></details>
+  <details><summary>Est-ce un produit d'Anthropic ?</summary><p>Non. Ce projet n'est ni affilié à Anthropic ni approuvé par Anthropic. Il s'appuie sur des points d'accès internes qui peuvent changer sans préavis.</p></details>
+</div></section>
+
+<section class="alt final"><div class="wrap">
+  <h2>Garde un œil sur ta limite, sans y penser</h2>
+  <p class="sub" style="margin-inline:auto">Une commande, et ta barre de menu te dit où tu en es et où tu vas.</p>
+  <div class="install"><div class="term on" id="p4"><div class="line" id="p4c" tabindex="0">curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh</div><button class="ico" type="button" data-copy="p4c" aria-label="Copier la commande"><svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></button></div></div>
+  <div class="cta"><a class="btn primary" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger pour Mac</a><a class="btn" href="https://github.com/Alane38/usageforecast">Mettre une étoile sur GitHub</a></div>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <span>UsageForecast · licence MIT · « Claude » est une marque d'Anthropic, sans affiliation.</span>
+  <span><a href="https://github.com/Alane38/usageforecast">Code source</a> · <a href="https://github.com/Alane38/usageforecast/releases">Versions</a> · <a href="https://github.com/Alane38/usageforecast/blob/main/SECURITY.md">Sécurité</a></span>
+</div></footer>
+
+<script>
+document.querySelectorAll('.seg button').forEach(function(tab){
+  tab.addEventListener('click',function(){
+    document.querySelectorAll('.seg button').forEach(function(t){t.setAttribute('aria-selected',String(t===tab))});
+    document.querySelectorAll('.install > .term').forEach(function(p){p.classList.toggle('on',p.id===tab.dataset.pane)});
+  });
+});
+document.querySelectorAll('button.ico').forEach(function(button){
+  button.addEventListener('click',function(){
+    var text=document.getElementById(button.dataset.copy).textContent;
+    navigator.clipboard.writeText(text).then(function(){button.classList.add('done');setTimeout(function(){button.classList.remove('done')},2000)});
+  });
+});
+var share=document.getElementById('share');
+if(share)share.addEventListener('click',function(){
+  var data={title:'UsageForecast',text:'UsageForecast : ton usage de Claude dans la barre de menu du Mac',url:location.href};
+  if(navigator.share){navigator.share(data).catch(function(){})}
+  else{navigator.clipboard.writeText(location.href).then(function(){share.textContent='Lien copié'})}
+});
+fetch('https://api.github.com/repos/Alane38/usageforecast').then(function(r){return r.ok?r.json():null}).then(function(d){
+  if(d&&typeof d.stargazers_count==='number'&&d.stargazers_count>0)document.getElementById('stars').textContent='★ '+d.stargazers_count;
+}).catch(function(){});
+</script>
+</body>
+</html>

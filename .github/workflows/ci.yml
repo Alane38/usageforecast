@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tests unitaires
+        run: CUB_SDK="$(xcrun --show-sdk-path)" ./scripts/test.sh
+      - name: Compilation (développement)
+        run: CUB_SDK="$(xcrun --show-sdk-path)" ./scripts/build.sh
+      - name: Compilation (release)
+        run: CUB_SDK="$(xcrun --show-sdk-path)" ./scripts/build.sh --release
+
+  mobile:
+    name: application mobile et relais
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Tests (chiffrement, statistiques, relais, synchronisation)
+        working-directory: mobile
+        run: bun test
+      - name: Fabrication du relais
+        working-directory: mobile
+        run: bun scripts/build-relay.mjs

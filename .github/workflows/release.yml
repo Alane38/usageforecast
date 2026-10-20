@@ -1,0 +1,47 @@
+name: Release
+
+# Une release GitHub avec l'application compilée à chaque tag vX.Y.Z (ou à la main pour un tag existant).
+# L'application n'est pas notarisée : au premier lancement, clic droit > Ouvrir.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag existant à publier (ex. v1.8.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - name: Tag et version
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+      - name: Tests unitaires
+        run: CUB_SDK="$(xcrun --show-sdk-path)" ./scripts/test.sh
+      - name: Compilation (release)
+        run: CUB_SDK="$(xcrun --show-sdk-path)" ./scripts/build.sh --release
+      - name: Archive
+        run: |
+          ditto -c -k --keepParent build/UsageForecast.app "UsageForecast-$VERSION-arm64.zip"
+          shasum -a 256 "UsageForecast-$VERSION-arm64.zip" > "UsageForecast-$VERSION-arm64.zip.sha256"
+      - name: Notes de version
+        run: |
+          awk -v v="$VERSION" '$0 ~ "^## "v" " {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Voir CHANGELOG.md" > notes.md
+      - name: Publier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "La release $TAG existe déjà : rien à publier."; exit 0; fi
+          gh release create "$TAG" "UsageForecast-$VERSION-arm64.zip" "UsageForecast-$VERSION-arm64.zip.sha256" \
+            --title "UsageForecast $VERSION" --notes-file notes.md
