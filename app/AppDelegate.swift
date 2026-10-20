@@ -1,86 +1,79 @@
-import SwiftUI
 import AppKit
 import Carbon
+import SwiftUI
 
-/// Point d'entrée de l'app de barre de menu : crée l'icône, le popover et les gestionnaires, puis branche
-/// les rafraîchissements périodiques. Les autres responsabilités vivent dans les extensions `AppDelegate+…`.
-class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+/// Point d'entrée de l'app : possède l'item de la barre de menu, le popover et les gestionnaires de données.
+/// Les comportements sont répartis dans les extensions `AppDelegate+…`.
+final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var anchorWindow: NSWindow?
-    var statusItem: NSStatusItem!
-    var popover: NSPopover!
-    var usageManager: UsageManager!
-    var statusManager: StatusManager!
-    var eventMonitor: Any?
+    private(set) var statusItem: NSStatusItem!
+    private(set) var popover: NSPopover!
+    private(set) var usageManager: UsageManager!
+    private(set) var statusManager: StatusManager!
+    var eventMonitor: Any? = nil
+    var hotKeyRef: EventHotKeyRef? = nil
     let settingsController = SettingsWindowController()
     let welcomeController = WelcomeWindowController()
-    var hotKeyRef: EventHotKeyRef?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Notifier.install()
         NSLog("✅ Application lancée, notifications prêtes")
 
         installStatusItem()
-        usageManager = UsageManager(statusItem: statusItem, delegate: self)
-        statusManager = StatusManager()
+        installManagers()
         installPopover()
-        applyAppearancePreference()
-        followSystemAppearance()
 
-        usageManager.fetchUsage()
-        statusManager.fetch()
-        // Limites, crédits Console et statut Anthropic : une fois par minute,
-        // ralenti à 5 min tant que l'API refuse (voir RefreshPolicy).
+        trackAppearancePreference()
+
+        refreshAll()
         scheduleRefresh()
 
         runNotificationTests()
         runCommandLineTools()
         setUpWelcome()
-        runDevelopmentModes()
+        applyDevelopmentOptions()
 
-        // Le décompte avant reset de la barre de menu avance chaque minute, sans appel réseau.
-        Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in
-            self.usageManager.refreshMenuBar()
-        }
+        scheduleCountdownTick()
+        installKeyboardShortcut()
+    }
 
-        setupKeyboardShortcut()
+    func refreshAll() {
+        usageManager.fetchUsage()
+        statusManager.fetch()
     }
 
     private func installStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        guard let button = statusItem.button else { return }
-        updateStatusIcon(percentage: 0)
-        button.action = #selector(handleClick)
-        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        button.target = self
-        button.appearsDisabled = false
-        button.isEnabled = true
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem = item
+        guard let barButton = item.button else { return }
+        updateStatusIcon(percentage: 0, tone: .ok)
+        barButton.target = self
+        barButton.action = #selector(statusItemClicked)
+        barButton.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        barButton.appearsDisabled = false
+        barButton.isEnabled = true
+    }
+
+    /// Les gestionnaires ont besoin de l'item de la barre de menu : il doit donc exister avant eux.
+    private func installManagers() {
+        let usage = UsageManager(statusItem: statusItem, delegate: self)
+        let statuses = StatusManager()
+        usageManager = usage
+        statusManager = statuses
     }
 
     private func installPopover() {
         let content = NSHostingController(rootView: PopoverView(usageManager: usageManager, statusManager: statusManager))
-        // Sans cette option le contrôleur ne propage jamais sa taille : le popover reste à 320 pt
-        // alors que le contenu est plus haut, et l'en-tête est rogné en haut.
+        // Sans `preferredContentSize`, le contrôleur ne propage pas sa taille : le popover resterait à 320 pt
+        // et l'en-tête serait rogné quand le contenu est plus haut.
         content.sizingOptions = [.preferredContentSize]
 
-        popover = NSPopover()
-        // Taille de départ : la taille intrinsèque de SwiftUI (plafonnée à 600) prend ensuite le relais.
-        popover.contentSize = NSSize(width: 360, height: 320)
-        popover.behavior = .transient
-        popover.delegate = self
-        popover.contentViewController = content
-    }
-
-    /// Quand macOS bascule clair/sombre, un mode forcé identique au système doit revenir au rendu natif.
-    private func followSystemAppearance() {
-        DistributedNotificationCenter.default.addObserver(
-            forName: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
-            object: nil, queue: .main
-        ) { [weak self] _ in
-            // La clé des préférences peut avoir un léger retard sur la notification : on relit un instant plus tard.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self?.applyAppearancePreference()
-            }
-        }
+        let panel = NSPopover()
+        panel.contentSize = NSSize(width: 360, height: 320)
+        panel.behavior = .transient
+        panel.delegate = self
+        panel.contentViewController = content
+        popover = panel
     }
 
     private func runNotificationTests() {
@@ -90,6 +83,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
         if arguments.contains("--test-notification") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.usageManager.sendTestNotification() }
+        }
+    }
+
+    /// Le décompte avant reset de la barre de menu avance chaque minute, sans appel réseau.
+    private func scheduleCountdownTick() {
+        Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            self?.usageManager.refreshMenuBar()
         }
     }
 }

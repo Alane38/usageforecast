@@ -1,92 +1,94 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
-/// Zone de texte dont les raccourcis ⌘C, ⌘X, ⌘V et ⌘A fonctionnent même dans un popover ou une fenêtre
-/// sans menu Édition, où AppKit ne les route pas jusqu'à la vue.
-private final class ShortcutTextView: NSTextView {
+/// Zone de texte dont les raccourcis ⌘V, ⌘C, ⌘X et ⌘A fonctionnent toujours : dans une app de barre de menu
+/// sans menu « Édition », ces combinaisons n'atteindraient jamais le champ.
+final class PasteableNSTextView: NSTextView {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        runEditingShortcut(for: event) || super.performKeyEquivalent(with: event)
+    }
+
+    private func runEditingShortcut(for event: NSEvent) -> Bool {
         guard event.modifierFlags.contains(.command),
               let key = event.charactersIgnoringModifiers,
-              let action = editingActions[key] else {
-            return super.performKeyEquivalent(with: event)
-        }
-        action(self)
+              let action = editingShortcuts[key] else { return false }
+        action()
         return true
     }
 
-    private var editingActions: [String: (ShortcutTextView) -> Void] {
+    private var editingShortcuts: [String: () -> Void] {
         [
-            "v": { $0.paste(nil) },
-            "c": { $0.copy(nil) },
-            "x": { $0.cut(nil) },
-            "a": { $0.selectAll(nil) },
+            "v": { self.paste(nil) },
+            "c": { self.copy(nil) },
+            "x": { self.cut(nil) },
+            "a": { self.selectAll(nil) },
         ]
     }
 }
 
-/// Champ multiligne (cookies, jetons) avec retour à la ligne, sans correction ni substitution de texte.
-struct PasteableTextField: NSViewRepresentable {
+/// Champ multiligne avec retour à la ligne automatique, pour coller un cookie ou un long jeton.
+struct PasteableTextField {
     @Binding var text: String
-    var placeholder: String
-
-    func makeNSView(context: Context) -> NSScrollView {
-        let textView = makeTextView(delegate: context.coordinator)
-
-        let scrollView = NSScrollView()
-        scrollView.documentView = textView
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = false
-        scrollView.autohidesScrollers = true
-        scrollView.borderType = .bezelBorder
-        return scrollView
-    }
-
-    func updateNSView(_ nsView: NSScrollView, context: Context) {
-        guard let textView = nsView.documentView as? ShortcutTextView, textView.string != text else { return }
-        textView.string = text
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(text: $text)
-    }
-
-    private func makeTextView(delegate: NSTextViewDelegate) -> ShortcutTextView {
-        let textView = ShortcutTextView()
-        textView.delegate = delegate
-        textView.font = NSFont.systemFont(ofSize: 11)
-        textView.textColor = .labelColor
-        textView.backgroundColor = .textBackgroundColor
-        textView.drawsBackground = true
-        textView.textContainerInset = NSSize(width: 4, height: 4)
-        textView.isEditable = true
-        textView.isSelectable = true
-        textView.isRichText = false
-        textView.allowsUndo = true
-        textView.usesFindBar = false
-        textView.isGrammarCheckingEnabled = false
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticDashSubstitutionEnabled = false
-        textView.isAutomaticTextReplacementEnabled = false
-
-        // Le texte passe à la ligne : la largeur suit la vue, la hauteur grandit avec le contenu.
-        textView.isHorizontallyResizable = false
-        textView.isVerticallyResizable = true
-        textView.autoresizingMask = [.width]
-        textView.textContainer?.widthTracksTextView = true
-        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
-        return textView
-    }
+    /// Conservé pour les appelants ; `NSTextView` n'affiche pas de texte indicatif.
+    let placeholder: String
 
     final class Coordinator: NSObject, NSTextViewDelegate {
-        private let text: Binding<String>
+        private let owner: PasteableTextField
 
-        init(text: Binding<String>) {
-            self.text = text
+        init(owner: PasteableTextField) {
+            self.owner = owner
         }
 
         func textDidChange(_ notification: Notification) {
-            guard let textView = notification.object as? NSTextView else { return }
-            text.wrappedValue = textView.string
+            guard let edited = notification.object as? NSTextView else { return }
+            owner.text = edited.string
         }
     }
+
+    private func makeEditor(delegate: NSTextViewDelegate) -> PasteableNSTextView {
+        let editor = PasteableNSTextView()
+        editor.delegate = delegate
+        editor.font = .systemFont(ofSize: 11)
+        editor.textColor = .labelColor
+        editor.backgroundColor = .textBackgroundColor
+        editor.drawsBackground = true
+        editor.textContainerInset = NSSize(width: 4, height: 4)
+
+        editor.isEditable = true
+        editor.isSelectable = true
+        editor.isRichText = false
+        editor.allowsUndo = true
+        editor.usesFindBar = false
+        editor.isGrammarCheckingEnabled = false
+        editor.isAutomaticQuoteSubstitutionEnabled = false
+        editor.isAutomaticDashSubstitutionEnabled = false
+        editor.isAutomaticTextReplacementEnabled = false
+
+        // Le texte passe à la ligne à la largeur du champ et ne grandit que vers le bas.
+        editor.isHorizontallyResizable = false
+        editor.isVerticallyResizable = true
+        editor.autoresizingMask = [.width]
+        editor.textContainer?.widthTracksTextView = true
+        editor.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        return editor
+    }
+}
+
+extension PasteableTextField: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSScrollView {
+        let container = NSScrollView()
+        container.documentView = makeEditor(delegate: context.coordinator)
+        container.hasVerticalScroller = true
+        container.hasHorizontalScroller = false
+        container.autohidesScrollers = true
+        container.borderType = .bezelBorder
+        return container
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let editor = nsView.documentView as? PasteableNSTextView, editor.string != text else { return }
+        editor.string = text
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(owner: self) }
 }
