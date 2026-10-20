@@ -1,171 +1,135 @@
 import SwiftUI
-import AppKit
 
-class StatusManager: ObservableObject {
-    @Published var indicator: String = "none"        // none | minor | major | critical (raw, global)
-    @Published var statusDescription: String = "All systems operational"
-    @Published var incidents: [StatusIncident] = []
-    @Published var affectedComponents: [AffectedComponent] = []
-    @Published var allComponents: [StatusComponent] = defaultTrackedComponents
-    @Published var selectedComponentIds: Set<String> = defaultTrackedComponentIdSet
-    @Published var lastUpdated: Date?
-    @Published var hasFetched: Bool = false
+/// Suit l'état des services Claude et prévient quand l'état des seuls services suivis change.
+final class StatusManager: ObservableObject {
+    @Published private(set) var indicator = "none"
+    @Published private(set) var statusDescription = "All systems operational"
+    @Published private(set) var incidents = [StatusIncident]()
+    @Published private(set) var affectedComponents = [AffectedComponent]()
+    @Published private(set) var allComponents = defaultTrackedComponents
+    @Published private(set) var selectedComponentIds = defaultTrackedComponentIdSet
+    @Published private(set) var lastUpdated: Date?
+    @Published private(set) var hasFetched = false
 
-    // Canonical URL (status.anthropic.com 302-redirects here)
+    /// Adresse canonique : status.anthropic.com redirige ici.
     let endpoint = URL(string: "https://status.claude.com/api/v2/summary.json")!
 
-    init() {
-        if let saved = UserDefaults.standard.array(forKey: "tracked_component_ids") as? [String] {
-            selectedComponentIds = Set(saved)
-        }
-        // Clean up legacy debug pref if present
-        UserDefaults.standard.removeObject(forKey: "status_preview_mode")
+    private enum Key {
+        static let tracked = "tracked_component_ids"
+        static let lastEffective = "last_effective_indicator"
+        static let notifications = "status_notifications_enabled"
+        static let obsoletePreview = "status_preview_mode"
     }
+
+    /// Indexé par gravité : 0 = rien à signaler, 3 = panne majeure.
+    private static let indicatorBySeverity = ["none", "minor", "major", "critical"]
+
+    private static let severityByComponentStatus = [
+        "under_maintenance": 1, "degraded_performance": 1,
+        "partial_outage": 2,
+        "major_outage": 3,
+    ]
+
+    private let defaults = UserDefaults.standard
+
+    init() {
+        if let saved = defaults.stringArray(forKey: Key.tracked) {
+            selectedComponentIds = .init(saved)
+        }
+        defaults.removeObject(forKey: Key.obsoletePreview)
+    }
+
+    // MARK: - Choix des services suivis
+
+    func isTracked(_ id: String) -> Bool { selectedComponentIds.contains(id) }
 
     func toggleComponent(_ id: String) {
-        if selectedComponentIds.contains(id) {
-            selectedComponentIds.remove(id)
-        } else {
-            selectedComponentIds.insert(id)
-        }
-        UserDefaults.standard.set(Array(selectedComponentIds), forKey: "tracked_component_ids")
+        selectedComponentIds.formSymmetricDifference([id])
+        persistTrackedSelection()
     }
 
-    func isTracked(_ id: String) -> Bool {
-        selectedComponentIds.contains(id)
+    private func persistTrackedSelection() {
+        defaults.set(Array(selectedComponentIds), forKey: Key.tracked)
     }
 
-    // MARK: - Filtered/effective views (respect tracked components)
+    // MARK: - Vues limitées aux services suivis
 
-    var filteredAffectedComponents: [AffectedComponent] {
-        affectedComponents.filter { selectedComponentIds.contains($0.id) }
+    var filteredAffectedComponents: [AffectedComponent] { affectedComponents.filter { isTracked($0.id) } }
+
+    /// Un incident sans service rattaché reste visible : mieux vaut un doute qu'un silence.
+    var filteredIncidents: [StatusIncident] { incidents.filter(concernsTrackedService) }
+
+    private func concernsTrackedService(_ incident: StatusIncident) -> Bool {
+        incident.componentIds.isEmpty || !selectedComponentIds.isDisjoint(with: incident.componentIds)
     }
 
-    var filteredIncidents: [StatusIncident] {
-        incidents.filter { incident in
-            guard !incident.componentIds.isEmpty else { return true }
-            return incident.componentIds.contains(where: { selectedComponentIds.contains($0) })
-        }
-    }
+    var effectiveIndicator: String { Self.indicatorBySeverity[min(worstTrackedSeverity, 3)] }
 
-    var effectiveIndicator: String {
-        let trackedComponents = allComponents.filter { selectedComponentIds.contains($0.id) }
-        let max = trackedComponents.map { severity(for: $0.status) }.max() ?? 0
-        switch max {
-        case 0:  return "none"
-        case 1:  return "minor"
-        case 2:  return "major"
-        default: return "critical"
-        }
+    private var worstTrackedSeverity: Int {
+        allComponents.filter { isTracked($0.id) }.map { severity(for: $0.status) }.max() ?? 0
     }
 
     func severity(for componentStatus: String) -> Int {
-        switch componentStatus {
-        case "operational":          return 0
-        case "under_maintenance":    return 1
-        case "degraded_performance": return 1
-        case "partial_outage":       return 2
-        case "major_outage":         return 3
-        default:                     return 0
-        }
+        Self.severityByComponentStatus[componentStatus] ?? 0
+    }
+
+    // MARK: - Réseau
+
+    private var summaryRequest: URLRequest {
+        URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
     }
 
     func fetch() {
-        let request = URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
-            guard let self = self, let data = data else { return }
-            self.parse(data)
-        }.resume()
+        let task = URLSession.shared.dataTask(with: summaryRequest) { [weak self] data, _, _ in
+            guard let data else { return }
+            self?.parse(data)
+        }
+        task.resume()
     }
 
     func parse(_ data: Data) {
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let status = json["status"] as? [String: Any],
-              let indicator = status["indicator"] as? String,
-              let desc = status["description"] as? String else {
-            return
-        }
+        guard let feed = StatusFeed.decode(data) else { return }
+        DispatchQueue.main.async { self.apply(feed) }
+    }
 
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let isoNoFrac = ISO8601DateFormatter()
-        isoNoFrac.formatOptions = [.withInternetDateTime]
+    private func apply(_ feed: StatusFeed) {
+        let isFirstFetch = !hasFetched
 
-        var parsedIncidents: [StatusIncident] = []
-        if let raw = json["incidents"] as? [[String: Any]] {
-            for inc in raw {
-                guard let id = inc["id"] as? String,
-                      let name = inc["name"] as? String,
-                      let st = inc["status"] as? String else { continue }
-                if st == "resolved" || st == "postmortem" { continue }
-                let updates = inc["incident_updates"] as? [[String: Any]] ?? []
-                let latest = (updates.first?["body"] as? String) ?? ""
-                let dateStr = (updates.first?["created_at"] as? String) ?? (inc["updated_at"] as? String)
-                let updatedAt = dateStr.flatMap { iso.date(from: $0) ?? isoNoFrac.date(from: $0) }
-                let compIds = (inc["components"] as? [[String: Any]] ?? [])
-                    .compactMap { $0["id"] as? String }
-                parsedIncidents.append(StatusIncident(
-                    id: id, name: name, status: st, latestUpdate: latest,
-                    updatedAt: updatedAt,
-                    componentIds: compIds
-                ))
-            }
-        }
+        indicator = feed.indicator
+        statusDescription = feed.description
+        incidents = feed.incidents
+        affectedComponents = feed.affectedComponents
+        adoptComponents(feed.components)
+        lastUpdated = .now
+        hasFetched = true
 
-        var parsedAffected: [AffectedComponent] = []
-        var parsedAll: [StatusComponent] = []
-        if let raw = json["components"] as? [[String: Any]] {
-            for c in raw {
-                guard let id = c["id"] as? String,
-                      let name = c["name"] as? String,
-                      let st = c["status"] as? String else { continue }
-                parsedAll.append(StatusComponent(id: id, name: name, status: st))
-                if st != "operational" {
-                    parsedAffected.append(AffectedComponent(id: id, name: name, status: st))
-                }
-            }
-        }
+        let current = effectiveIndicator
+        let previous = defaults.string(forKey: Key.lastEffective)
+        defaults.set(current, forKey: Key.lastEffective)
+        guard !isFirstFetch, let previous, previous != current else { return }
+        notifyStatusChange(to: current, description: feed.description)
+    }
 
-        DispatchQueue.main.async {
-            let isFirstFetch = !self.hasFetched
-
-            self.indicator = indicator
-            self.statusDescription = desc
-            self.incidents = parsedIncidents
-            self.affectedComponents = parsedAffected
-            if !parsedAll.isEmpty {
-                self.allComponents = parsedAll
-                // First time we see real components: track all except Claude for Government by default
-                if UserDefaults.standard.array(forKey: "tracked_component_ids") == nil {
-                    let defaultIds = parsedAll
-                        .filter { !$0.name.localizedCaseInsensitiveContains("Government") }
-                        .map { $0.id }
-                    self.selectedComponentIds = Set(defaultIds)
-                    UserDefaults.standard.set(Array(self.selectedComponentIds),
-                                              forKey: "tracked_component_ids")
-                }
-            }
-            self.lastUpdated = Date()
-            self.hasFetched = true
-
-            // Notify on transitions of EFFECTIVE (filtered) indicator
-            let effective = self.effectiveIndicator
-            let previous = UserDefaults.standard.string(forKey: "last_effective_indicator")
-            if !isFirstFetch, let previous = previous, previous != effective {
-                self.notifyStatusChange(to: effective, description: desc)
-            }
-            UserDefaults.standard.set(effective, forKey: "last_effective_indicator")
-        }
+    /// Au premier contact réel, tout est suivi sauf l'offre Government, réservée à un usage à part.
+    private func adoptComponents(_ components: [StatusComponent]) {
+        guard !components.isEmpty else { return }
+        allComponents = components
+        guard defaults.object(forKey: Key.tracked) == nil else { return }
+        selectedComponentIds = Set(
+            components.filter { !$0.name.localizedCaseInsensitiveContains("Government") }.map(\.id)
+        )
+        persistTrackedSelection()
     }
 
     func notifyStatusChange(to indicator: String, description: String) {
-        guard UserDefaults.standard.bool(forKey: "status_notifications_enabled") else { return }
+        guard defaults.bool(forKey: Key.notifications) else { return }
 
-        if indicator == "none" {
-            Notifier.send(title: "Claude est de nouveau en ligne", body: "Tous les services fonctionnent.", id: "status-change")
-        } else {
-            Notifier.send(title: "Statut Claude : \(description)", body: "Détails sur status.claude.com.", id: "status-change")
-        }
-        NSLog("📬 Sent status-change notification: \(indicator)")
+        let isBackToNormal = indicator == "none"
+        Notifier.send(
+            title: isBackToNormal ? "Claude est de nouveau en ligne" : "Statut Claude : \(description)",
+            body: isBackToNormal ? "Tous les services fonctionnent." : "Détails sur status.claude.com.",
+            id: "status-change"
+        )
+        NSLog("📬 Notification de changement de statut envoyée : \(indicator)")
     }
 }
