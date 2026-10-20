@@ -5,6 +5,12 @@ extension AppDelegate {
 
     @objc func quitApp() { NSApp.terminate(nil) }
 
+    /// Un double-clic sur l'app (Applications, Spotlight) ouvre la fenêtre : utile quand l'icône est masquée par un gestionnaire de barre de menu.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !popover.isShown { showPopover() }
+        return true
+    }
+
     func openSettings() {
         popover.performClose(self)
         settingsController.show(usageManager: usageManager, statusManager: statusManager)
