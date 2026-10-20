@@ -1,135 +1,92 @@
 import SwiftUI
 import AppKit
 
-// Custom NSTextField that properly handles paste
-class CustomTextField: NSTextField {
-    var onTextChange: ((String) -> Void)?
-
+/// Zone de texte dont les raccourcis ⌘C, ⌘X, ⌘V et ⌘A fonctionnent même dans un popover ou une fenêtre
+/// sans menu Édition, où AppKit ne les route pas jusqu'à la vue.
+private final class ShortcutTextView: NSTextView {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if event.type == .keyDown {
-            if (event.modifierFlags.contains(.command)) {
-                switch event.charactersIgnoringModifiers {
-                case "v":
-                    if let string = NSPasteboard.general.string(forType: .string) {
-                        self.stringValue = string
-                        onTextChange?(string)
-                        NSLog("ClaudeUsage: Pasted text length: \(string.count)")
-                        return true
-                    }
-                case "a":
-                    self.currentEditor()?.selectAll(nil)
-                    return true
-                case "c":
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(self.stringValue, forType: .string)
-                    return true
-                case "x":
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(self.stringValue, forType: .string)
-                    self.stringValue = ""
-                    onTextChange?("")
-                    return true
-                default:
-                    break
-                }
-            }
+        guard event.modifierFlags.contains(.command),
+              let key = event.charactersIgnoringModifiers,
+              let action = editingActions[key] else {
+            return super.performKeyEquivalent(with: event)
         }
-        return super.performKeyEquivalent(with: event)
+        action(self)
+        return true
     }
 
-    override func textDidChange(_ notification: Notification) {
-        super.textDidChange(notification)
-        onTextChange?(self.stringValue)
+    private var editingActions: [String: (ShortcutTextView) -> Void] {
+        [
+            "v": { $0.paste(nil) },
+            "c": { $0.copy(nil) },
+            "x": { $0.cut(nil) },
+            "a": { $0.selectAll(nil) },
+        ]
     }
 }
 
-// Custom TextView that ensures keyboard commands work
-class PasteableNSTextView: NSTextView {
-    override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if event.modifierFlags.contains(.command) {
-            switch event.charactersIgnoringModifiers {
-            case "v": // Paste
-                paste(nil)
-                return true
-            case "c": // Copy
-                copy(nil)
-                return true
-            case "x": // Cut
-                cut(nil)
-                return true
-            case "a": // Select All
-                selectAll(nil)
-                return true
-            default:
-                break
-            }
-        }
-        return super.performKeyEquivalent(with: event)
-    }
-}
-
-// Multi-line text field with proper paste support
+/// Champ multiligne (cookies, jetons) avec retour à la ligne, sans correction ni substitution de texte.
 struct PasteableTextField: NSViewRepresentable {
     @Binding var text: String
     var placeholder: String
 
     func makeNSView(context: Context) -> NSScrollView {
+        let textView = makeTextView(delegate: context.coordinator)
+
         let scrollView = NSScrollView()
-        let textView = PasteableNSTextView()
-
-        textView.isEditable = true
-        textView.isSelectable = true
-        textView.font = NSFont.systemFont(ofSize: 11)
-        textView.textColor = .labelColor
-        textView.backgroundColor = .textBackgroundColor
-        textView.drawsBackground = true
-        textView.isRichText = false
-        textView.delegate = context.coordinator
-        textView.textContainerInset = NSSize(width: 4, height: 4)
-        textView.isAutomaticQuoteSubstitutionEnabled = false
-        textView.isAutomaticDashSubstitutionEnabled = false
-        textView.isAutomaticTextReplacementEnabled = false
-        textView.usesFindBar = false
-        textView.isGrammarCheckingEnabled = false
-        textView.allowsUndo = true
-
-        // Enable wrapping
-        textView.isHorizontallyResizable = false
-        textView.isVerticallyResizable = true
-        textView.autoresizingMask = [.width]
-        textView.textContainer?.widthTracksTextView = true
-        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
-
         scrollView.documentView = textView
         scrollView.hasVerticalScroller = true
         scrollView.hasHorizontalScroller = false
         scrollView.autohidesScrollers = true
         scrollView.borderType = .bezelBorder
-
         return scrollView
     }
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
-        guard let textView = nsView.documentView as? PasteableNSTextView else { return }
-        if textView.string != text {
-            textView.string = text
-        }
+        guard let textView = nsView.documentView as? ShortcutTextView, textView.string != text else { return }
+        textView.string = text
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        Coordinator(text: $text)
     }
 
-    class Coordinator: NSObject, NSTextViewDelegate {
-        var parent: PasteableTextField
+    private func makeTextView(delegate: NSTextViewDelegate) -> ShortcutTextView {
+        let textView = ShortcutTextView()
+        textView.delegate = delegate
+        textView.font = NSFont.systemFont(ofSize: 11)
+        textView.textColor = .labelColor
+        textView.backgroundColor = .textBackgroundColor
+        textView.drawsBackground = true
+        textView.textContainerInset = NSSize(width: 4, height: 4)
+        textView.isEditable = true
+        textView.isSelectable = true
+        textView.isRichText = false
+        textView.allowsUndo = true
+        textView.usesFindBar = false
+        textView.isGrammarCheckingEnabled = false
+        textView.isAutomaticQuoteSubstitutionEnabled = false
+        textView.isAutomaticDashSubstitutionEnabled = false
+        textView.isAutomaticTextReplacementEnabled = false
 
-        init(_ parent: PasteableTextField) {
-            self.parent = parent
+        // Le texte passe à la ligne : la largeur suit la vue, la hauteur grandit avec le contenu.
+        textView.isHorizontallyResizable = false
+        textView.isVerticallyResizable = true
+        textView.autoresizingMask = [.width]
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        return textView
+    }
+
+    final class Coordinator: NSObject, NSTextViewDelegate {
+        private let text: Binding<String>
+
+        init(text: Binding<String>) {
+            self.text = text
         }
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            parent.text = textView.string
+            text.wrappedValue = textView.string
         }
     }
 }

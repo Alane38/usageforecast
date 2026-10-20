@@ -1,10 +1,20 @@
 import SwiftUI
 
-private func shortDate(_ date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.locale = Locale(identifier: "fr_FR")
-    formatter.dateFormat = "d MMM"
-    return formatter.string(from: date)
+private extension Date {
+    /// « 19 oct. » : jour et mois abrégé, toujours en français.
+    var dayAndMonth: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.dateFormat = "d MMM"
+        return formatter.string(from: self)
+    }
+}
+
+extension View {
+    /// Petit texte grisé des popovers.
+    func secondaryCaption() -> some View {
+        font(.caption).foregroundColor(Color.secondaryText)
+    }
 }
 
 /// Détail par modèle (Sonnet, Fable), replié par défaut.
@@ -12,33 +22,45 @@ struct ModelDetails: View {
     @ObservedObject var usageManager: UsageManager
     @State private var isOpen = false
 
-    private var rows: [(name: String, percent: Int)] {
-        var result: [(String, Int)] = []
-        if usageManager.hasWeeklySonnet { result.append(("Sonnet", usageManager.weeklySonnetUsage)) }
-        if usageManager.hasWeeklyFable && usageManager.weeklyFableUsage >= 1 { result.append(("Fable", usageManager.weeklyFableUsage)) }
-        return result
+    private struct ModelUsage {
+        let name: String
+        let percent: Int
+    }
+
+    /// Fable n'apparaît qu'à partir de 1 % : en dessous, la ligne n'apprend rien.
+    private var models: [ModelUsage] {
+        var usages: [ModelUsage] = []
+        if usageManager.hasWeeklySonnet {
+            usages.append(ModelUsage(name: "Sonnet", percent: usageManager.weeklySonnetUsage))
+        }
+        if usageManager.hasWeeklyFable && usageManager.weeklyFableUsage >= 1 {
+            usages.append(ModelUsage(name: "Fable", percent: usageManager.weeklyFableUsage))
+        }
+        return usages
     }
 
     var body: some View {
-        if !rows.isEmpty {
+        if !models.isEmpty {
             DisclosureGroup("Par modèle · semaine", isExpanded: $isOpen) {
                 VStack(spacing: 8) {
-                    ForEach(rows, id: \.name) { row in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(row.name).font(.caption)
-                                Spacer()
-                                Text("\(row.percent) %").font(.caption).foregroundColor(Color.secondaryText)
-                            }
-                            GaugeBar(used: Double(row.percent), projected: nil, expected: nil,
-                                     tone: UsageTone.of(percent: Double(row.percent), pace: nil, isStale: false))
-                        }
-                    }
+                    ForEach(models, id: \.name, content: row)
                 }
                 .padding(.top, 6)
             }
-            .font(.caption)
-            .foregroundColor(Color.secondaryText)
+            .secondaryCaption()
+        }
+    }
+
+    private func row(_ model: ModelUsage) -> some View {
+        let percent = Double(model.percent)
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(model.name).font(.caption)
+                Spacer()
+                Text("\(model.percent) %").secondaryCaption()
+            }
+            GaugeBar(used: percent, projected: nil, expected: nil,
+                     tone: UsageTone.of(percent: percent, pace: nil, isStale: false))
         }
     }
 }
@@ -47,38 +69,43 @@ struct ModelDetails: View {
 struct ExtraUsageRow: View {
     @ObservedObject var usageManager: UsageManager
 
-    private func money(_ minor: Int) -> String {
-        CreditsSummary.money(Double(minor) / 100, usageManager.creditCurrency)
+    private func money(_ minorUnits: Int) -> String {
+        CreditsSummary.money(Double(minorUnits) / 100, usageManager.creditCurrency)
     }
 
     var body: some View {
         if usageManager.hasCreditUsage || usageManager.freeCreditsMinor > 0 {
             VStack(alignment: .leading, spacing: 5) {
-                HStack {
-                    Text("Utilisation supplémentaire").font(.caption).foregroundColor(Color.secondaryText)
-                    Spacer()
-                    Button("Gérer →") { NSWorkspace.shared.open(URL(string: "https://claude.ai/new#settings/usage")!) }
-                        .buttonStyle(.borderless)
-                        .font(.caption)
-                }
-                if usageManager.hasCreditUsage {
-                    let spent = usageManager.extraSpentMinor
-                    let limit = usageManager.extraLimitMinor
-                    let fraction = limit > 0 ? Double(spent) / Double(limit) : 0
-                    if limit > 0 {
-                        GaugeBar(used: fraction * 100, projected: nil, expected: nil,
-                                 tone: UsageTone.of(percent: fraction * 100, pace: nil, isStale: false))
-                    }
-                    Text(limit > 0 ? "\(money(spent)) sur \(money(limit))" : "\(money(spent)) dépensés")
-                        .font(.caption)
-                        .foregroundColor(Color.secondaryText)
-                }
+                titleLine
+                if usageManager.hasCreditUsage { paidUsage }
                 if usageManager.freeCreditsMinor > 0 {
-                    Text("\(money(usageManager.freeCreditsMinor)) de crédits gratuits restants")
-                        .font(.caption)
-                        .foregroundColor(Color.secondaryText)
+                    Text("\(money(usageManager.freeCreditsMinor)) de crédits gratuits restants").secondaryCaption()
                 }
             }
+        }
+    }
+
+    private var titleLine: some View {
+        HStack {
+            Text("Utilisation supplémentaire").secondaryCaption()
+            Spacer()
+            Button("Gérer →") { NSWorkspace.shared.open(URL(string: "https://claude.ai/new#settings/usage")!) }
+                .buttonStyle(.borderless)
+                .font(.caption)
+        }
+    }
+
+    @ViewBuilder
+    private var paidUsage: some View {
+        let spent = usageManager.extraSpentMinor
+        let cap = usageManager.extraLimitMinor
+        if cap > 0 {
+            let percent = Double(spent) / Double(cap) * 100
+            GaugeBar(used: percent, projected: nil, expected: nil,
+                     tone: UsageTone.of(percent: percent, pace: nil, isStale: false))
+            Text("\(money(spent)) sur \(money(cap))").secondaryCaption()
+        } else {
+            Text("\(money(spent)) dépensés").secondaryCaption()
         }
     }
 }
@@ -88,12 +115,16 @@ struct LimitResetsLine: View {
     @ObservedObject var usageManager: UsageManager
 
     var body: some View {
-        if usageManager.limitResetsLeft > 0 {
-            let count = usageManager.limitResetsLeft
-            let until = usageManager.limitResetsEndAt.map { " jusqu'au \(shortDate($0.addingTimeInterval(-1)))" } ?? ""
-            Text("\(count) réinitialisation\(count > 1 ? "s" : "") de limite disponible\(count > 1 ? "s" : "")\(until)")
-                .font(.caption)
-                .foregroundColor(Color.secondaryText)
+        let count = usageManager.limitResetsLeft
+        if count > 0 {
+            Text(sentence(count: count)).secondaryCaption()
         }
+    }
+
+    private func sentence(count: Int) -> String {
+        let plural = count > 1 ? "s" : ""
+        // La date de fin est exclusive : on affiche la veille, dernier jour où l'offre sert.
+        let deadline = usageManager.limitResetsEndAt.map { " jusqu'au \($0.addingTimeInterval(-1).dayAndMonth)" } ?? ""
+        return "\(count) réinitialisation\(plural) de limite disponible\(plural)\(deadline)"
     }
 }
