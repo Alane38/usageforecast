@@ -1,102 +1,150 @@
 import SwiftUI
 
+private extension View {
+    /// Légende discrète : petite, grisée, qui passe à la ligne au lieu d'être tronquée.
+    func discreetCaption() -> some View {
+        font(.caption2)
+            .foregroundStyle(Color.secondaryText)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    func smallButton(prominent: Bool) -> some View {
+        modifier(SmallButtonStyle(prominent: prominent))
+    }
+
+    func linkLikeButton() -> some View {
+        buttonStyle(.borderless).font(.caption)
+    }
+}
+
+private struct SmallButtonStyle: ViewModifier {
+    let prominent: Bool
+
+    func body(content: Content) -> some View {
+        if prominent {
+            content.buttonStyle(.borderedProminent).controlSize(.small)
+        } else {
+            content.buttonStyle(.bordered).controlSize(.small)
+        }
+    }
+}
+
 /// État des sources de données et reconnexion (import depuis le navigateur ou cookie collé).
 struct ConnectionsView: View {
     @ObservedObject var usageManager: UsageManager
     @State private var consoleCookieInput = ""
     @State private var showingConsolePaste = false
 
-    private var consoleState: String {
-        if usageManager.consoleCookie.isEmpty { return "non connectée" }
-        return usageManager.consoleStatus.isEmpty ? "connectée" : usageManager.consoleStatus
-    }
-
-    private func line(_ label: String, _ value: String) -> some View {
-        HStack(alignment: .top) {
-            Text(label).font(.caption)
-            Spacer()
-            Text(value)
-                .font(.caption2)
-                .foregroundColor(Color.secondaryText)
-                .multilineTextAlignment(.trailing)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Connexions")
-                .font(.caption.weight(.semibold))
-            line("Limites", usageManager.usageSource == "claude.ai" ? "claude.ai, en direct" : "statusline Claude Code")
-            line("Session claude.ai", !usageManager.keychainIssue.isEmpty ? usageManager.keychainIssue
-                 : (usageManager.sessionCookie.isEmpty ? "absente : colle un cookie ou importe-la" : "présente"))
-            line("Console (crédits API)", consoleState)
-
-            Button("Importer les sessions depuis Zen / Firefox") {
-                if usageManager.importBrowserCookies() { usageManager.fetchUsage() }
-            }
-            .buttonStyle(.borderless)
-            .font(.caption)
-            if !usageManager.browserImportReport.isEmpty {
-                Text(usageManager.browserImportReport)
-                    .font(.caption2)
-                    .foregroundColor(Color.secondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if usageManager.browserAccessDenied { accessHelp }
-
-            Button(showingConsolePaste ? "Annuler" : "Coller le cookie de la Console") {
-                showingConsolePaste.toggle()
-            }
-            .buttonStyle(.borderless)
-            .font(.caption)
+        leadingColumn(spacing: 8) {
+            Text("Connexions").font(.caption.weight(.semibold))
+            statusRows
+            browserImportSection
+            consolePasteToggle
             if showingConsolePaste { consolePasteSection }
         }
     }
 
-    /// Les trois gestes qui restent à faire pour l'Accès complet au disque, un bouton chacun.
-    private var accessHelp: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button("1. Ouvrir l'Accès complet au disque") { SystemSettings.openFullDiskAccess() }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-            Text("Active \(Brand.name) dans la liste. S'il n'y est pas, glisse-le depuis le Finder.")
-                .font(.caption2)
-                .foregroundColor(Color.secondaryText)
-            Button("2. Afficher l'app dans le Finder") { SystemSettings.revealAppInFinder() }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            Button("3. Relancer l'app, puis importer à nouveau") { SystemSettings.relaunchApp() }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+    private func leadingColumn<Content: View>(spacing: CGFloat, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: spacing, content: content)
+    }
+
+    // MARK: Lignes d'état
+
+    private var limitsSourceText: String {
+        usageManager.usageSource == "claude.ai" ? "claude.ai, en direct" : "statusline Claude Code"
+    }
+
+    private var sessionText: String {
+        if !usageManager.keychainIssue.isEmpty { return usageManager.keychainIssue }
+        return usageManager.sessionCookie.isEmpty ? "absente : colle un cookie ou importe-la" : "présente"
+    }
+
+    private var consoleText: String {
+        guard !usageManager.consoleCookie.isEmpty else { return "non connectée" }
+        return usageManager.consoleStatus.isEmpty ? "connectée" : usageManager.consoleStatus
+    }
+
+    @ViewBuilder
+    private var statusRows: some View {
+        row("Limites", limitsSourceText)
+        row("Session claude.ai", sessionText)
+        row("Console (crédits API)", consoleText)
+    }
+
+    private func row(_ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top) {
+            Text(title).font(.caption)
+            Spacer()
+            Text(detail)
+                .multilineTextAlignment(.trailing)
+                .discreetCaption()
+        }
+    }
+
+    private func note(_ message: String) -> some View {
+        Text(message).discreetCaption()
+    }
+
+    // MARK: Import depuis le navigateur
+
+    @ViewBuilder
+    private var browserImportSection: some View {
+        Button("Importer les sessions depuis Zen / Firefox", action: importFromBrowsers)
+            .linkLikeButton()
+        if !usageManager.browserImportReport.isEmpty { note(usageManager.browserImportReport) }
+        if usageManager.browserAccessDenied { fullDiskAccessSteps }
+    }
+
+    private func importFromBrowsers() {
+        let imported = usageManager.importBrowserCookies()
+        if imported { usageManager.fetchUsage() }
+    }
+
+    /// Les trois gestes qui restent pour l'Accès complet au disque, un bouton chacun.
+    private var fullDiskAccessSteps: some View {
+        leadingColumn(spacing: 6) {
+            Button("1. Ouvrir l'Accès complet au disque", action: SystemSettings.openFullDiskAccess)
+                .smallButton(prominent: true)
+            note("Active \(Brand.name) dans la liste. S'il n'y est pas, glisse-le depuis le Finder.")
+            secondaryStep("2. Afficher l'app dans le Finder", action: SystemSettings.revealAppInFinder)
+            secondaryStep("3. Relancer l'app, puis importer à nouveau", action: SystemSettings.relaunchApp)
         }
         .padding(.vertical, 4)
     }
 
+    private func secondaryStep(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(title, action: action).smallButton(prominent: false)
+    }
+
+    // MARK: Cookie de la Console
+
+    private var consolePasteToggle: some View {
+        Button(showingConsolePaste ? "Annuler" : "Coller le cookie de la Console") {
+            showingConsolePaste.toggle()
+        }
+        .linkLikeButton()
+    }
+
     @ViewBuilder
     private var consolePasteSection: some View {
-        Text("platform.claude.com/settings/billing > F12 > Réseau > requête « credits » > En-têtes de requête > Cookie. Colle l'en-tête complet.")
-            .font(.caption2)
-            .foregroundColor(Color.secondaryText)
-            .fixedSize(horizontal: false, vertical: true)
+        note("platform.claude.com/settings/billing > F12 > Réseau > requête « credits » > En-têtes de requête > Cookie. Colle l'en-tête complet.")
         PasteableTextField(text: $consoleCookieInput, placeholder: "Cookie de la Console…")
-            .frame(height: 60)
+            .frame(minHeight: 60, maxHeight: 60)
             .cornerRadius(4)
-        HStack(spacing: 8) {
-            Button("Enregistrer") {
-                guard !consoleCookieInput.isEmpty else { return }
-                usageManager.saveConsoleCookie(consoleCookieInput)
-                consoleCookieInput = ""
-                showingConsolePaste = false
-                usageManager.fetchConsoleBalance()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
+        HStack(alignment: .center, spacing: 8) {
+            Button("Enregistrer", action: saveConsoleCookie).smallButton(prominent: true)
             if !usageManager.consoleCookie.isEmpty {
-                Button("Déconnecter") { usageManager.disconnectConsole() }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
+                secondaryStep("Déconnecter", action: usageManager.disconnectConsole)
             }
         }
+    }
+
+    private func saveConsoleCookie() {
+        guard !consoleCookieInput.isEmpty else { return }
+        usageManager.saveConsoleCookie(consoleCookieInput)
+        consoleCookieInput = ""
+        showingConsolePaste = false
+        usageManager.fetchConsoleBalance()
     }
 }
