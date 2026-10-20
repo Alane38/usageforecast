@@ -32,7 +32,7 @@ Ensuite, l'app se met à jour toute seule en un clic (elle vérifie l'empreinte 
 - **Crédits API** : solde et dépense du mois depuis la Console Anthropic (Max et Team).
 - **État des services** : incidents de Claude et de l'API.
 - **Barre de menu configurable** : session, semaine ou la plus haute, avec décompte avant reset.
-- **Application mobile** (Android, installable depuis le navigateur) : les mêmes écrans sur ton téléphone, chiffrés de bout en bout.
+- **Application mobile** (Android : installable depuis le navigateur ou en APK, voir [android/README.md](android/README.md)) : les mêmes écrans sur ton téléphone, chiffrés de bout en bout.
 - **Assistant de premier lancement** et **mises à jour en un clic**, thème sombre par défaut.
 
 <p align="center">

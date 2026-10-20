@@ -10,9 +10,11 @@ Format : une section par version, la plus récente en haut.
 - **Statusline lu à un emplacement standard** (`~/Library/Application Support/UsageForecast/statusline.json`) en plus de l'ancien chemin : la copie la plus récente l'emporte.
 - **Installateur en une ligne** (`docs/install.sh` (servi à `https://alane38.github.io/usageforecast/install.sh`)) : télécharge la dernière release, vérifie son SHA-256, contrôle l'identifiant de l'archive, installe dans Applications. `--uninstall` retire l'app, `--purge` met aussi les données à la Corbeille.
 - **Script de captures** (`scripts/make-screenshots.sh`) : régénère les images du README et du site à partir des écrans de démonstration.
+- **Application Android (APK)** : coque WebView de l'application mobile (`android/`, `scripts/build-apk.sh`). Au premier lancement elle demande l'adresse de ton relais, la mémorise, puis ouvre la PWA en plein écran ; seule la permission réseau est demandée, https uniquement, navigation limitée au domaine du relais. Signée avec la clé de debug Android (installation hors Play Store ; les mises à jour exigent la même clé).
 - **Site** (`docs/`, servi par GitHub Pages), `SECURITY.md`, modèles d'issue.
 
 ### Modifié
+- **Code réécrit** : l'ensemble de l'analyse des réponses, des crédits, des réglages, du suivi des services, de la récupération, de la fenêtre, du popover et des raccourcis est réécrit, avec des fonctions plus courtes et des retours anticipés (comportement et textes inchangés : 337 tests et 22 rendus de référence identiques).
 - Anciens scripts de DMG, ancien logo et ancienne chaîne de build supprimés ; plus aucun lien vers l'ancien projet.
 - Dépôt renommé `Alane38/usageforecast`. README réécrit pour le public.
 - Mobile : le champ de l'adresse du relais n'affiche plus d'exemple qui ressemble à une valeur ; astuce d'installation Firefox corrigée ; icônes de l'application générées depuis le même dessin que le Mac ; thème sombre par défaut.

@@ -173,6 +173,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       <li>Courbe minute par minute sur 24 h</li>
       <li>Moyennes par jour, seulement avec assez de données</li>
       <li>Crédits API et dépense du mois (Max et Team)</li>
+      <li>Application Android : navigateur ou APK, synchro chiffrée</li>
     </ul>
   </div>
   <img src="img/statistiques.png" alt="Statistiques par jour de la semaine">
@@ -203,7 +204,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   <h2>Questions</h2><p class="sub">Les réponses courtes.</p>
   <details><summary>C'est vraiment gratuit ?</summary><p>Oui. Le code est ouvert, sous licence MIT. Le relais mobile tient dans l'offre gratuite de Cloudflare.</p></details>
   <details><summary>Ça marche sans Claude Code ?</summary><p>Oui, avec le cookie de ta session claude.ai collé dans les Réglages. L'assistant de démarrage t'explique les deux voies.</p></details>
-  <details><summary>Et sur Windows ou Linux ?</summary><p>Pas pour l'instant : l'app vit dans la barre de menu de macOS. L'application mobile, elle, s'installe depuis le navigateur d'un téléphone Android.</p></details>
+  <details><summary>Et sur Android ?</summary><p>Oui : l'application mobile s'installe depuis le navigateur de ton téléphone, ou en APK téléchargé dans les <a href="https://github.com/Alane38/usageforecast/releases/latest">versions</a>. Elle se connecte à ton propre relais chiffré.</p></details>
+  <details><summary>Et sur Windows ou Linux ?</summary><p>Pas pour l'instant : l'app vit dans la barre de menu de macOS.</p></details>
   <details><summary>Pourquoi macOS me demande un mot de passe après une mise à jour ?</summary><p>Les versions ne sont pas notarisées par Apple : le certificat est auto-signé, donc macOS redemande l'accès au trousseau à chaque nouvelle version. Un compte développeur Apple le supprimerait.</p></details>
   <details><summary>Comment désinstaller ?</summary><p>Dans le Terminal : <code>curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh -s -- --uninstall</code>. L'app va à la Corbeille et tes données restent ; ajoute <code>--purge</code> pour les mettre aussi à la Corbeille.</p></details>
   <details><summary>Est-ce un produit d'Anthropic ?</summary><p>Non. Ce projet n'est ni affilié à Anthropic ni approuvé par Anthropic. Il s'appuie sur des points d'accès internes qui peuvent changer sans préavis.</p></details>
