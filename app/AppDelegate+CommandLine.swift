@@ -39,7 +39,7 @@ extension AppDelegate {
             let work = FileManager.default.temporaryDirectory.appendingPathComponent("UsageForecast-test-install")
             do {
                 let newApp = try UpdateInstaller.prepare(zip: URL(fileURLWithPath: a[0]), checksum: URL(fileURLWithPath: a[1]), version: a[3],
-                                                         bundleID: "com.alane.usagebar", workDirectory: work)
+                                                         bundleID: "com.alane.usageforecast", workDirectory: work)
                 print("préparé :", newApp.lastPathComponent)
                 let process = try UpdateInstaller.launchReplacement(newApp: newApp, target: URL(fileURLWithPath: a[2]), trash: URL(fileURLWithPath: a[4]),
                                                                     pid: 999_999, relaunch: false, workDirectory: work)

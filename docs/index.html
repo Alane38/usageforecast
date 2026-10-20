@@ -48,6 +48,11 @@ h1 em{font-style:normal;color:var(--accent)}
 .ico svg{width:20px;height:20px}
 .ico .ok{display:none;color:var(--accent)}
 .ico.done .ok{display:block}.ico.done .cp{display:none}
+.phone{max-width:290px;margin:0 auto;border:9px solid #1d2026;border-radius:38px;overflow:hidden;background:#000;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.phone img{display:block;width:100%;border:0!important;border-radius:0!important}
+.apk-meta{color:var(--muted);font-size:14px;margin:10px 0 0}
+.note{color:var(--muted);font-size:14px;margin:14px 0 0}
+.mini{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
 .mobile-only{display:none;text-align:center;margin:14px 0 0;color:var(--muted);font-size:14.5px}
 .mobile-only button{margin-top:8px}
 button.copy,.btn{font:inherit;font-size:14.5px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:8px;padding:8px 14px;text-decoration:none;display:inline-block}
@@ -98,7 +103,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <div class="topbar"><div class="wrap">
   <a class="brand" href="#"><img src="icon-192.png" alt="">UsageForecast</a>
   <nav>
-    <a href="#fonctions">Fonctions</a><a href="#confidentialite">Confidentialité</a><a href="#faq">Questions</a>
+    <a href="#fonctions">Fonctions</a><a href="#android">Android</a><a href="#confidentialite">Confidentialité</a><a href="#faq">Questions</a>
     <a class="gh" href="https://github.com/Alane38/usageforecast">GitHub <span id="stars"></span></a>
   </nav>
 </div></div>
@@ -113,17 +118,19 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     <div class="seg" role="tablist">
       <button role="tab" aria-selected="true" data-pane="p1">Terminal</button>
       <button role="tab" aria-selected="false" data-pane="p2">Télécharger</button>
+      <button role="tab" aria-selected="false" data-pane="p5">Android</button>
     </div>
     <div class="term on" id="p1"><div class="line" id="p1c" tabindex="0">curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh</div><button class="ico" type="button" data-copy="p1c" aria-label="Copier la commande"><svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></button></div>
     <div class="term plain" id="p2"><div class="line">Télécharge le .zip de la dernière version, décompresse-le et glisse l'app dans Applications.</div></div>
-    <div class="mobile-only">Tu es sur ton téléphone ? Envoie-toi le lien pour l'installer depuis ton Mac.<br><button class="copy" type="button" id="share">Envoyer le lien à mon Mac</button></div>
+    <div class="term plain" id="p5"><div class="line">L'application Android (APK) se connecte à ton relais chiffré. <a href="#android">Voir comment</a>.</div><a class="btn primary apk-link" href="https://github.com/Alane38/usageforecast/releases/latest">APK</a></div>
+    <div class="mobile-only"><span id="mobile-text">Tu es sur ton téléphone ? Envoie-toi le lien pour l'installer depuis ton Mac.</span><br><button class="copy" type="button" id="share">Envoyer le lien à mon Mac</button><a class="btn primary apk-link" id="apk-mobile" href="https://github.com/Alane38/usageforecast/releases/latest" hidden>Télécharger l'APK Android</a></div>
   </div>
   <div class="cta">
     <a class="btn primary" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger pour Mac</a>
     <a class="btn" href="https://github.com/Alane38/usageforecast">Voir le code</a>
   </div>
   <ul class="trust">
-    <li>macOS 13+, Apple Silicon</li><li>Empreinte SHA-256 vérifiée</li><li>Licence MIT</li><li>Aucune télémétrie</li>
+    <li>macOS 13+, Apple Silicon</li><li>Empreinte SHA-256 vérifiée</li><li>Licence MIT</li><li>Aucune télémétrie</li><li>Application Android</li>
   </ul>
 
   <div class="stage">
@@ -177,6 +184,25 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     </ul>
   </div>
   <img src="img/statistiques.png" alt="Statistiques par jour de la semaine">
+</div></section>
+
+<section id="android"><div class="wrap split">
+  <div class="phone"><img src="img/mobile-accueil.png" alt="Application Android UsageForecast : session, semaine et budget du jour" loading="lazy"></div>
+  <div>
+    <h2>Ton usage aussi sur Android</h2>
+    <p class="sub" style="margin-bottom:0">Les mêmes écrans que sur le Mac, dans ta poche : jauges, prévisions, budget du jour, historique et statistiques. Tout transite chiffré par un relais que tu héberges toi-même.</p>
+    <ul>
+      <li>Déploie ton relais Cloudflare gratuit (une commande, voir le guide)</li>
+      <li>Sur le Mac : Réglages, Mobile, active la synchro et affiche le code</li>
+      <li>Installe l'APK, colle le lien d'association : c'est prêt</li>
+    </ul>
+    <div class="mini">
+      <a class="btn primary apk-link" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger l'APK</a>
+      <a class="btn" href="https://github.com/Alane38/usageforecast/blob/main/android/README.md">Guide d'installation</a>
+    </div>
+    <p class="apk-meta" id="apk-meta">APK pour Android 8 et plus</p>
+    <p class="note">Hors Play Store : à l'installation, Android te demande d'autoriser les sources inconnues pour ton navigateur. L'empreinte SHA-256 est publiée à côté du fichier. Tu préfères sans APK ? La même application s'installe depuis le navigateur, depuis l'adresse de ton relais.</p>
+  </div>
 </div></section>
 
 <section id="confidentialite"><div class="wrap">
@@ -243,6 +269,19 @@ if(share)share.addEventListener('click',function(){
   if(navigator.share){navigator.share(data).catch(function(){})}
   else{navigator.clipboard.writeText(location.href).then(function(){share.textContent='Lien copié'})}
 });
+if(/Android/i.test(navigator.userAgent)){
+  document.getElementById('mobile-text').textContent="Tu es sur Android ? Télécharge l'application, puis installe ton relais depuis un ordinateur.";
+  document.getElementById('share').hidden=true;
+  document.getElementById('apk-mobile').hidden=false;
+}
+fetch('https://api.github.com/repos/Alane38/usageforecast/releases/latest').then(function(r){return r.ok?r.json():null}).then(function(d){
+  if(!d||!d.assets)return;
+  var apk=d.assets.filter(function(a){return /-android\.apk$/.test(a.name)})[0];
+  if(!apk)return;
+  document.querySelectorAll('.apk-link').forEach(function(a){a.href=apk.browser_download_url});
+  var mb=(apk.size/1048576).toFixed(1).replace('.',',');
+  document.getElementById('apk-meta').textContent=d.tag_name.replace(/^v/,'UsageForecast ')+' · '+mb+' Mo · Android 8 et plus';
+}).catch(function(){});
 fetch('https://api.github.com/repos/Alane38/usageforecast').then(function(r){return r.ok?r.json():null}).then(function(d){
   if(d&&typeof d.stargazers_count==='number'&&d.stargazers_count>0)document.getElementById('stars').textContent='★ '+d.stargazers_count;
 }).catch(function(){});

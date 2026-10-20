@@ -5,7 +5,7 @@
 set -eu
 
 REPO="Alane38/usageforecast"
-BUNDLE_ID="com.alane.usagebar"
+BUNDLE_ID="com.alane.usageforecast"
 APP_NAME="UsageForecast.app"
 # USAGEFORECAST_DEST : dossier d'installation de remplacement (tests) ; sans quitter ni ouvrir l'app.
 DEST="${USAGEFORECAST_DEST:-/Applications/$APP_NAME}"

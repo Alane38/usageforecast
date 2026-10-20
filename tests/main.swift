@@ -27,7 +27,7 @@ check(StatuslineUsage.parse(payload("""
 {"rate_limits":{"five_hour":{"used_percentage":250,"resets_at":1003600}}}
 """), capturedAt: now, now: now)?.fiveHour?.usedPercentage == 100, "pourcentage borné à 100")
 
-let keychain = KeychainStore(service: "com.alane.usagebar.tests")
+let keychain = KeychainStore(service: "com.alane.usageforecast.tests")
 keychain.delete(account: "t")
 check(keychain.read(account: "t") == nil, "Keychain : absent au départ")
 check(keychain.write("secret-1", account: "t") && keychain.read(account: "t") == "secret-1", "Keychain : écriture puis lecture")
@@ -503,9 +503,9 @@ check(OrganizationList.resolve(selected: "ccc-3", available: [], cookieOrg: "aaa
 let goodSum = String(repeating: "ab", count: 32)
 check(UpdateInstaller.parseChecksum("\(goodSum)  UsageForecast-1.9.2-arm64.zip\n") == goodSum && UpdateInstaller.parseChecksum(goodSum.uppercased()) == goodSum, "somme : format shasum, majuscules acceptées")
 check(UpdateInstaller.parseChecksum("") == nil && UpdateInstaller.parseChecksum("xyz") == nil && UpdateInstaller.parseChecksum(String(goodSum.dropLast())) == nil && UpdateInstaller.parseChecksum(String(repeating: "g", count: 64)) == nil, "somme : vide, courte ou non hexadécimale -> nil")
-let info: [String: Any] = ["CFBundleIdentifier": "com.alane.usagebar", "CFBundleShortVersionString": "1.9.2"]
-check(UpdateInstaller.problem(inInfo: info, bundleID: "com.alane.usagebar", version: "1.9.2") == nil, "archive : identifiant et version conformes")
-check(UpdateInstaller.problem(inInfo: info, bundleID: "com.autre.app", version: "1.9.2") != nil && UpdateInstaller.problem(inInfo: info, bundleID: "com.alane.usagebar", version: "1.9.3") != nil && UpdateInstaller.problem(inInfo: nil, bundleID: "x", version: "1") != nil, "archive : mauvais identifiant, mauvaise version ou sans plist -> refus")
+let info: [String: Any] = ["CFBundleIdentifier": "com.alane.usageforecast", "CFBundleShortVersionString": "1.9.2"]
+check(UpdateInstaller.problem(inInfo: info, bundleID: "com.alane.usageforecast", version: "1.9.2") == nil, "archive : identifiant et version conformes")
+check(UpdateInstaller.problem(inInfo: info, bundleID: "com.autre.app", version: "1.9.2") != nil && UpdateInstaller.problem(inInfo: info, bundleID: "com.alane.usageforecast", version: "1.9.3") != nil && UpdateInstaller.problem(inInfo: nil, bundleID: "x", version: "1") != nil, "archive : mauvais identifiant, mauvaise version ou sans plist -> refus")
 let replacement = UpdateInstaller.script(pid: 4242, newApp: URL(fileURLWithPath: "/tmp/it's/new.app"), target: URL(fileURLWithPath: "/Applications/UsageForecast.app"), trash: URL(fileURLWithPath: "/Users/x/.Trash"), relaunch: true)
 check(replacement.contains("kill -0 4242") && replacement.contains("'/tmp/it'\\''s/new.app'") && replacement.contains("UsageForecast.app.update"), "script : attend le pid, protège les apostrophes, prépare une copie voisine")
 check(replacement.contains(".Trash/UsageForecast-avant-mise-a-jour-") && replacement.components(separatedBy: "\n").allSatisfy { !$0.hasPrefix("r" + "m ") }, "script : l'ancienne app va à la Corbeille, jamais supprimée")

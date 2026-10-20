@@ -11,7 +11,7 @@
 	<key>CFBundleIconFile</key>
 	<string>UsageForecast</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.alane.usagebar</string>
+	<string>com.alane.usageforecast</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

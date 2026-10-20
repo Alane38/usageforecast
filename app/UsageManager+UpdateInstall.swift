@@ -13,7 +13,7 @@ extension UsageManager {
         guard let release = availableUpdate, let zip = release.zipURL, let checksum = release.checksumURL else { return }
         if case .working = updateInstallState { return }
         updateInstallState = .working("Téléchargement…")
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.alane.usagebar"
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.alane.usageforecast"
         let target = Bundle.main.bundleURL
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("UsageForecast-update-\(release.version)")
 

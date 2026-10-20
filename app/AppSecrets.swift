@@ -5,7 +5,7 @@ import Foundation
 /// - release (`scripts/build.sh --release`) : trousseau (un seul élément pour tous les secrets), chiffré et réservé à l'app.
 /// Voir docs/adr/001-stockage-des-secrets.md.
 enum AppSecrets {
-    static let keychainService = "com.alane.usagebar"
+    static let keychainService = "com.alane.usageforecast"
     static let claudeAccount = "claude_session_cookie"
     static let consoleAccount = "console_session_cookie"
     /// Synchro mobile : identifiant du coffre sur le relais et clé de chiffrement du téléphone.
