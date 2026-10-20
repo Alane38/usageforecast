@@ -11,14 +11,17 @@ struct HourColumnsChart: View {
 
     private var totalDays: Int { stats.first?.totalDays ?? 0 }
 
-    var body: some View {
+    var body: some View { chart }
+
+    @ViewBuilder
+    private var chart: some View {
         if totalDays == 0 {
             Text("Pas encore de journée exploitable (au moins 5 h de relevés dans la journée).")
                 .font(.caption).foregroundColor(.secondary)
         } else {
-            HStack(alignment: .top, spacing: 6) {
+            HStack(alignment: VerticalAlignment.top, spacing: 6) {
                 axis
-                GeometryReader { geo in plot(width: geo.size.width) }.frame(height: topRoom + plotHeight + 20)
+                GeometryReader { proxy in plot(width: proxy.size.width) }.frame(height: topRoom + plotHeight + 20)
             }
             .accessibilityElement(children: .contain)
         }
@@ -82,9 +85,11 @@ struct WeekdayColumnsChart: View {
     private var ceiling: Double { StatsStyle.ceiling(stats.compactMap(\.average).max() ?? 0) }
     private var tallest: Int? { stats.filter { $0.average != nil }.max { ($0.average ?? 0) < ($1.average ?? 0) }?.weekday }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            GeometryReader { geo in plot(width: geo.size.width) }.frame(height: topRoom + plotHeight + 32)
+    var body: some View { chart }
+
+    private var chart: some View {
+        LeadingColumn(spacing: 8) {
+            GeometryReader { proxy in plot(width: proxy.size.width) }.frame(height: topRoom + plotHeight + 32)
             HStack(spacing: 14) {
                 LegendKey(color: StatsStyle.accent, text: "3 jours observés ou plus")
                 LegendKey(color: StatsStyle.accentLight, text: "Indicatif (1 ou 2 jours)")

@@ -86,11 +86,11 @@ extension UsageManager {
         lastMobileUpload = now
         mobileUploadInFlight = true
         MobileUploader.upload(upload.request, bytes: upload.bytes) { [weak self] outcome in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                self.mobileUploadInFlight = false
-                self.mobileStatus = outcome.message
-                if outcome.ok { self.mobileLastSuccess = Date() }
+            DispatchQueue.main.async { [weak self] in
+                guard let manager = self else { return }
+                manager.mobileUploadInFlight = false
+                manager.mobileStatus = outcome.message
+                if outcome.ok { manager.mobileLastSuccess = Date() }
             }
         }
     }

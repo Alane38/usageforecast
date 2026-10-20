@@ -11,12 +11,14 @@ struct WelcomeView: View {
 
     private var connected: Bool { usageManager.hasFetchedData }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            VStack(alignment: .leading, spacing: 4) {
+    var body: some View { assistant }
+
+    private var assistant: some View {
+        LeadingColumn(spacing: 18) {
+            LeadingColumn(spacing: 4) {
                 Text("Bienvenue dans \(Brand.name)").font(.title2.bold())
                 Text("Pour afficher tes limites Claude, choisis une des deux sources. Tu peux changer plus tard dans les Réglages.")
-                    .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                    .font(.callout).foregroundStyle(.secondary).wrapsLines()
             }
 
             statusBanner
@@ -28,12 +30,11 @@ struct WelcomeView: View {
             ) {
                 Text(FirstRun.statuslineSetting)
                     .font(.system(size: 10.5, design: .monospaced)).textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .wrapsLines()
                     .padding(8).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 6))
                 Button(copied ? "Copié" : "Copier le réglage") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(FirstRun.statuslineSetting, forType: .string)
+                    copySetting()
                     copied = true
                 }
                 .disabled(copied)
@@ -57,8 +58,14 @@ struct WelcomeView: View {
         .padding(24)
     }
 
+    private func copySetting() {
+        let board = NSPasteboard.general
+        board.clearContents()
+        board.setString(FirstRun.statuslineSetting, forType: .string)
+    }
+
     private var statusBanner: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 8) {
             Circle().fill(connected ? Color.green : Color.orange).frame(width: 9, height: 9)
             Text(connected ? "Données reçues : tout est prêt." : "En attente de données…")
                 .font(.callout.weight(.medium))
@@ -70,7 +77,7 @@ struct WelcomeView: View {
 
     private func optionCard<Content: View>(title: String, detail: String, badge: String?,
                                            @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        LeadingColumn(spacing: 8) {
             HStack {
                 Text(title).font(.headline)
                 if let badge {
@@ -79,7 +86,7 @@ struct WelcomeView: View {
                         .background(Color.green.opacity(0.15), in: Capsule())
                 }
             }
-            Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            Text(detail).font(.callout).foregroundStyle(.secondary).wrapsLines()
             content()
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)

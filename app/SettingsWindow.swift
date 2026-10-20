@@ -30,7 +30,9 @@ struct SettingsView: View {
 
     @State private var tab = Snapshot.option("--tab") ?? "display"
 
-    var body: some View {
+    var body: some View { tabs }
+
+    private var tabs: some View {
         TabView(selection: $tab) {
             DisplayTab(usageManager: usageManager)
                 .tabItem { Label("Affichage", systemImage: "paintbrush") }

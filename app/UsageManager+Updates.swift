@@ -13,10 +13,11 @@ extension UsageManager {
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("\(Brand.name)/\(currentVersion)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 15
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
+        let task = URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
             let release = data.flatMap(UpdateChecker.parse)
             DispatchQueue.main.async { self?.applyRelease(release, announce: !force) }
-        }.resume()
+        }
+        task.resume()
     }
 
     func applyRelease(_ release: ReleaseInfo?, announce: Bool) {

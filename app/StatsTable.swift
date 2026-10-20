@@ -9,7 +9,9 @@ struct StatsJournalTable: View {
         ("Jour", 76), ("Semaine", 56), ("Session", 56), ("Pic", 40), ("Heures actives", nil), ("Couverture", 62),
     ]
 
-    var body: some View {
+    var body: some View { journal }
+
+    private var journal: some View {
         DisclosureGroup("Journal complet (\(summaries.count) jour\(summaries.count > 1 ? "s" : ""))", isExpanded: $isOpen) {
             VStack(alignment: .leading, spacing: 0) {
                 row(columns.map(\.title), isHeader: true)

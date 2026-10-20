@@ -18,11 +18,13 @@ struct DayColumnsChart: View {
         days.filter { $0.summary != nil }.max { ($0.summary?.weeklyUsed ?? 0) < ($1.summary?.weeklyUsed ?? 0) }?.day
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 6) {
+    var body: some View { chart }
+
+    private var chart: some View {
+        LeadingColumn(spacing: 8) {
+            HStack(alignment: VerticalAlignment.top, spacing: 6) {
                 axis
-                GeometryReader { geo in plot(width: geo.size.width) }
+                GeometryReader { proxy in plot(width: proxy.size.width) }
                     .frame(height: topRoom + plotHeight + 30)
             }
             HStack(spacing: 14) {

@@ -16,18 +16,21 @@ struct WeekPlanDisclosure: View {
         return segments.isEmpty ? nil : DayPlan(usedBeforeToday: used, segments: segments)
     }
 
-    var body: some View {
+    var body: some View { disclosure }
+
+    @ViewBuilder
+    private var disclosure: some View {
         if let plan {
             let hasGauge = plan.segments.first?.consumed != nil
             DisclosureGroup("Planning de la semaine", isExpanded: $isOpen) {
-                VStack(alignment: .leading, spacing: 6) {
+                LeadingColumn(spacing: 6) {
                     if let budget = usageManager.dayBudget { DayBudgetRow(budget: budget) }
-                    GeometryReader { geo in
-                        HStack(spacing: 2) {
-                            block(width: width(plan.usedBeforeToday, geo.size.width, count: plan.segments.count),
+                    GeometryReader { proxy in
+                        HStack(alignment: .center, spacing: 2) {
+                            block(width: width(plan.usedBeforeToday, proxy.size.width, count: plan.segments.count),
                                   text: "\(Int(plan.usedBeforeToday.rounded())) %", color: Color.primary.opacity(0.16))
                             ForEach(Array(plan.segments.enumerated()), id: \.offset) { _, segment in
-                                dayBlock(segment, width: width(segment.percent, geo.size.width, count: plan.segments.count))
+                                dayBlock(segment, width: width(segment.percent, proxy.size.width, count: plan.segments.count))
                             }
                         }
                     }
@@ -35,12 +38,12 @@ struct WeekPlanDisclosure: View {
                     labels(plan, greyLabel: hasGauge ? "avant auj." : "utilisé")
                     Text("Part de la limite à ne pas dépasser chaque jour pour arriver au reset (\(usageManager.weeklyResetsAt.map(AlertRules.dayAndClock) ?? "")) sans être bloqué.")
                         .font(.system(size: 11))
-                        .foregroundColor(Color.secondaryText)
+                        .foregroundColor(.secondaryText)
                 }
                 .padding(.top, 6)
             }
             .font(.caption)
-            .foregroundColor(Color.secondaryText)
+            .foregroundColor(.secondaryText)
         }
     }
 
@@ -62,7 +65,7 @@ struct WeekPlanDisclosure: View {
     private func dayBlock(_ segment: PlanSegment, width: CGFloat) -> some View {
         if let consumed = segment.consumed, let budget = usageManager.dayBudget {
             let fraction = segment.percent > 0 ? min(consumed / segment.percent, 1) : 1
-            ZStack(alignment: .leading) {
+            ZStack(alignment: Alignment.leading) {
                 RoundedRectangle(cornerRadius: 4).fill(budget.tone.color.opacity(0.22))
                 RoundedRectangle(cornerRadius: 4).fill(budget.tone.color.opacity(0.6)).frame(width: max(width * fraction, consumed > 0 ? 3 : 0))
                 if width >= 56 {
@@ -84,10 +87,10 @@ struct WeekPlanDisclosure: View {
 
     /// Une étiquette par bloc, centrée sous lui, écartée si elle chevaucherait la précédente (blocs étroits en fin de semaine).
     private func labels(_ plan: DayPlan, greyLabel: String) -> some View {
-        GeometryReader { geo in
+        GeometryReader { proxy in
             let count = plan.segments.count
-            let widths = [width(plan.usedBeforeToday, geo.size.width, count: count)]
-                + plan.segments.map { width($0.percent, geo.size.width, count: count) }
+            let widths = [width(plan.usedBeforeToday, proxy.size.width, count: count)]
+                + plan.segments.map { width($0.percent, proxy.size.width, count: count) }
             let texts = [greyLabel] + plan.segments.map(\.label)
             let placed = Self.placeLabels(texts: texts, blockWidths: widths, gap: 2)
             ZStack(alignment: .topLeading) {

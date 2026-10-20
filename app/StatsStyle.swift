@@ -6,7 +6,8 @@ import SwiftUI
 enum StatsStyle {
     /// Bleu : assez profond en mode clair (contraste 4,5:1 sur blanc), plus vif en mode sombre.
     static let accent = Color(nsColor: NSColor(name: nil) { appearance in
-        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        return isDark
             ? NSColor(red: 0.45, green: 0.65, blue: 1.0, alpha: 1)
             : NSColor(red: 0.10, green: 0.38, blue: 0.85, alpha: 1)
     })
@@ -37,10 +38,10 @@ enum StatsStyle {
     static func hour(_ hour: Int) -> String { "\(hour) h" }
 
     private static let weekdayFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.dateFormat = "EEE d/MM"
-        return formatter
+        let shortDay = DateFormatter()
+        shortDay.locale = Locale(identifier: "fr_FR")
+        shortDay.dateFormat = "EEE d/MM"
+        return shortDay
     }()
 
     /// « lun. 19/10 »
@@ -86,11 +87,13 @@ struct StatsCard<Content: View>: View {
     let subtitle: String
     @ViewBuilder let content: () -> Content
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
+    var body: some View { card }
+
+    private var card: some View {
+        LeadingColumn(spacing: 10) {
+            LeadingColumn(spacing: 2) {
                 Text(title).font(.system(size: 13, weight: .semibold))
-                Text(subtitle).font(.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                Text(subtitle).font(.caption).foregroundColor(.secondary).wrapsLines()
             }
             content()
         }
@@ -106,10 +109,30 @@ struct LegendKey: View {
     let color: Color
     let text: String
 
-    var body: some View {
-        HStack(spacing: 5) {
+    var body: some View { entry }
+
+    private var entry: some View {
+        HStack(alignment: .center, spacing: 5) {
             RoundedRectangle(cornerRadius: 2).fill(color).frame(width: 10, height: 10)
             Text(text).font(.system(size: 11)).foregroundColor(.secondary)
         }
     }
+}
+
+/// Colonne alignée à gauche : le cas de loin le plus fréquent des `VStack` de l'app.
+struct LeadingColumn<Content: View>: View {
+    private let spacing: CGFloat
+    private let content: Content
+
+    init(spacing: CGFloat, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+    }
+
+    var body: some View { VStack(alignment: .leading, spacing: spacing) { content } }
+}
+
+extension View {
+    /// Laisse le texte prendre autant de lignes que nécessaire au lieu d'être tronqué.
+    func wrapsLines() -> some View { fixedSize(horizontal: false, vertical: true) }
 }

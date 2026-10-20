@@ -99,9 +99,9 @@ enum UpdateInstaller {
     private static func download(_ url: URL, to destination: URL) throws -> URL {
         var result: (URL?, Error?)
         let done = DispatchSemaphore(value: 0)
-        var request = URLRequest(url: url)
-        request.timeoutInterval = 60
-        URLSession.shared.downloadTask(with: request) { location, response, error in
+        var downloadRequest = URLRequest(url: url)
+        downloadRequest.timeoutInterval = 60
+        URLSession.shared.downloadTask(with: downloadRequest) { location, response, error in
             defer { done.signal() }
             if let error { result = (nil, error); return }
             if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

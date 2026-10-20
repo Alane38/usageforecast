@@ -8,13 +8,15 @@ struct StatsTab: View {
 
     private var summaries: [DailySummary] { usageManager.dailySummaries }
 
-    var body: some View {
+    var body: some View { content }
+
+    private var content: some View {
         let recent = DailyInsights.recentDays(summaries, count: 14)
         let average = DailyInsights.averagePerDay(summaries)
         let hours = DailyInsights.hourStats(summaries)
         let peak = DailyInsights.peakHour(hours)
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+        return ScrollView {
+            LeadingColumn(spacing: 14) {
                 header
                 if summaries.isEmpty {
                     Text("Aucune journée enregistrée pour l'instant. Laisse l'app ouverte : une ligne s'ajoute chaque jour.")
@@ -78,15 +80,18 @@ struct StatsTab: View {
             KpiTile(label: "Heure de pointe", value: peak.map { StatsStyle.hour($0.hour) } ?? "—",
                     detail: peak.map { "active \(StatsStyle.percent($0.fraction)) des jours" } ?? "pas encore de jour complet")
         }
-        .fixedSize(horizontal: false, vertical: true)
+        .wrapsLines()
+    }
+
+    private func revealJournal() {
+        NSWorkspace.shared.activateFileViewerSelecting([DailyHistory.defaultURL])
     }
 
     private var footer: some View {
         HStack {
             Text("Source : daily.jsonl, gardé 400 jours. Rien ne quitte ta machine.").font(.caption).foregroundColor(.secondary)
             Spacer()
-            Button("Afficher le fichier") { NSWorkspace.shared.activateFileViewerSelecting([DailyHistory.defaultURL]) }
-                .controlSize(.small)
+            Button("Afficher le fichier", action: revealJournal).controlSize(ControlSize.small)
         }
     }
 }
@@ -97,11 +102,13 @@ struct KpiTile: View {
     let value: String
     let detail: String
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+    var body: some View { tile }
+
+    private var tile: some View {
+        LeadingColumn(spacing: 3) {
             Text(label).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(1)
             Text(value).font(.system(size: 21, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
-            Text(detail).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            Text(detail).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(2).wrapsLines()
         }
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -124,8 +131,10 @@ struct ConfidenceMeter: View {
         }
     }
 
-    var body: some View {
-        HStack(spacing: 2) {
+    var body: some View { notches }
+
+    private var notches: some View {
+        HStack(alignment: .center, spacing: 2) {
             ForEach(0..<4, id: \.self) { index in
                 RoundedRectangle(cornerRadius: 2).fill(index < filled ? StatsStyle.accent : Color.primary.opacity(0.15)).frame(width: 14, height: 6)
             }
@@ -140,12 +149,15 @@ struct WeekCompareView: View {
 
     private var dayCount: String { "\(comparison.completedDays) jour\(comparison.completedDays > 1 ? "s" : "")" }
 
-    var body: some View {
+    var body: some View { summary }
+
+    @ViewBuilder
+    private var summary: some View {
         if comparison.completedDays == 0 {
             Text("La semaine commence : la comparaison apparaît dès mardi, sur le jour complet écoulé.").font(.caption).foregroundColor(.secondary)
         } else {
             let scale = max(comparison.current, comparison.previous ?? 0, 1)
-            VStack(alignment: .leading, spacing: 8) {
+            LeadingColumn(spacing: 8) {
                 row("Cette semaine", value: comparison.current, scale: scale, fill: StatsStyle.accent)
                 if let previous = comparison.previous {
                     row("Semaine précédente", value: previous, scale: scale, fill: Color.primary.opacity(0.28))
@@ -162,10 +174,10 @@ struct WeekCompareView: View {
     private func row(_ title: String, value: Double, scale: Double, fill: Color) -> some View {
         HStack(spacing: 10) {
             Text(title).font(.system(size: 12)).frame(width: 122, alignment: .leading)
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
+            GeometryReader { proxy in
+                ZStack(alignment: Alignment.leading) {
                     Capsule().fill(Color.primary.opacity(0.08))
-                    Capsule().fill(fill).frame(width: max(geo.size.width * CGFloat(value / scale), value > 0 ? 6 : 0))
+                    Capsule().fill(fill).frame(width: max(proxy.size.width * CGFloat(value / scale), value > 0 ? 6 : 0))
                 }
             }
             .frame(height: 10)

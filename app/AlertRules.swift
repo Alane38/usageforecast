@@ -168,10 +168,10 @@ enum AlertRules {
 
     /// 3,4 sous 10 %/h, entier au-delà.
     static func formatRate(_ rate: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.maximumFractionDigits = rate < 10 ? 1 : 0
-        return formatter.string(from: NSNumber(value: rate)) ?? "?"
+        let numbers = NumberFormatter()
+        numbers.locale = Locale(identifier: "fr_FR")
+        numbers.maximumFractionDigits = rate < 10 ? 1 : 0
+        return numbers.string(from: NSNumber(value: rate)) ?? "?"
     }
     static func dayAndClock(_ date: Date) -> String { formatter("EEEE").string(from: date) + " à " + clock(date) }
 }

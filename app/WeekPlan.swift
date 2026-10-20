@@ -37,11 +37,11 @@ enum WeekPlan {
         let totalSeconds = resetsAt.timeIntervalSince(origin)
         guard totalSeconds > 0, remaining > 0 else { return [] }
 
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.calendar = calendar
-        formatter.timeZone = calendar.timeZone
-        formatter.dateFormat = "EEE"
+        let dayNames = DateFormatter()
+        dayNames.locale = Locale(identifier: "fr_FR")
+        dayNames.calendar = calendar
+        dayNames.timeZone = calendar.timeZone
+        dayNames.dateFormat = "EEE"
 
         var result: [PlanSegment] = []
         var start = origin
@@ -50,7 +50,7 @@ enum WeekPlan {
             let nextMidnight = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: start)) ?? resetsAt
             let end = min(nextMidnight, resetsAt)
             let share = remaining * end.timeIntervalSince(start) / totalSeconds
-            let label = dayIndex == 0 ? "auj." : (dayIndex == 1 ? "dem." : formatter.string(from: start).replacingOccurrences(of: ".", with: ""))
+            let label = dayIndex == 0 ? "auj." : (dayIndex == 1 ? "dem." : dayNames.string(from: start).replacingOccurrences(of: ".", with: ""))
             result.append(PlanSegment(label: label, percent: share, isToday: dayIndex == 0, consumed: dayIndex == 0 ? consumedToday : nil))
             start = end
             dayIndex += 1

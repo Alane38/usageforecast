@@ -16,7 +16,8 @@ enum UpdateChecker {
 
     /// Lit `tag_name` (« v1.8.1 ») et `html_url` ; nil si la réponse n'est pas une release (404, brouillon, JSON inattendu).
     static func parse(_ data: Data) -> ReleaseInfo? {
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        guard let object = try? JSONSerialization.jsonObject(with: data),
+              let json = object as? [String: Any],
               let tag = json["tag_name"] as? String,
               let link = json["html_url"] as? String, let url = URL(string: link),
               url.scheme == "https", url.host == "github.com",
@@ -42,9 +43,10 @@ enum UpdateChecker {
     static func isNewer(_ candidate: String, than current: String) -> Bool {
         guard let new = components(candidate), let old = components(current) else { return false }
         for index in 0..<max(new.count, old.count) {
-            let a = index < new.count ? new[index] : 0
-            let b = index < old.count ? old[index] : 0
-            if a != b { return a > b }
+            let candidatePart = index < new.count ? new[index] : 0
+            let currentPart = index < old.count ? old[index] : 0
+            if candidatePart == currentPart { continue }
+            return candidatePart > currentPart
         }
         return false
     }
