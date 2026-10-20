@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sombre quel que soit le mode du téléphone, comme la PWA. -->
+    <style name="Theme.UsageForecast" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/fond</item>
+        <item name="android:statusBarColor">@color/fond</item>
+        <item name="android:navigationBarColor">@color/fond</item>
+        <item name="android:colorAccent">@color/accent</item>
+    </style>
+</resources>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">UsageForecast</string>
+    <string name="shortcut_label">Adresse du relais</string>
+
+    <string name="setup_titre">Adresse du relais</string>
+    <string name="setup_aide">Colle l\'adresse de ton relais (https://….workers.dev) ou le lien d\'association complet affiché par UsageForecast sur ton Mac. La clé contenue dans le lien reste dans l\'application, elle n\'est jamais enregistrée par la coque.</string>
+    <string name="setup_indice">https://ton-relais.workers.dev</string>
+    <string name="setup_valider">Enregistrer et ouvrir</string>
+    <string name="setup_annuler">Annuler</string>
+    <string name="setup_oublier">Oublier ce relais et effacer les données</string>
+
+    <string name="erreur_vide">Saisis l\'adresse de ton relais.</string>
+    <string name="erreur_http">Seules les adresses https:// sont acceptées.</string>
+    <string name="erreur_adresse">Cette adresse n\'est pas valide.</string>
+    <string name="erreur_fragment">Le lien d\'association contient des caractères inattendus.</string>
+
+    <string name="reseau_titre">Relais injoignable</string>
+    <string name="reseau_aide">Vérifie ta connexion, puis réessaie. Si l\'adresse a changé, modifie-la.</string>
+    <string name="reseau_reessayer">Réessayer</string>
+    <string name="reseau_modifier">Changer l\'adresse</string>
+</resources>

@@ -2,3 +2,10 @@ build/
 mobile/relay/dist/
 mobile/relay/.wrangler/
 node_modules/
+
+android/.gradle/
+android/local.properties
+*.apk
+android/.gradle/
+android/local.properties
+android/.kotlin/

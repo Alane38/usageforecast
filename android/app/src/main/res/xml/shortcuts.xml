@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Appui long sur l'icône : accès à l'adresse du relais, même avec la navigation par gestes (pas de bouton retour à presser longtemps). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="reglages_relais"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.alane.usageforecast.SetupActivity"
+            android:targetPackage="com.alane.usageforecast" />
+    </shortcut>
+</shortcuts>
