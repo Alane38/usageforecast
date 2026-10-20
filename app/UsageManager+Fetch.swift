@@ -1,160 +1,178 @@
 import SwiftUI
 import AppKit
 
+/// Cycle de rafraîchissement : statusline, puis requêtes claude.ai pour l'organisation suivie.
 extension UsageManager {
-    func fetchOrganizationId(completion: @escaping (String?) -> Void) {
-        // Choix de l'utilisateur, sinon la valeur du cookie lastActiveOrg.
-        if let orgId = effectiveOrganizationId() {
-            completion(orgId)
+
+    // MARK: Point d'entrée
+
+    func fetchUsage() {
+        // Sans cookie le statusline suffit ; avec cookie il sert de repli si le réseau échoue.
+        let statuslineApplied = applyStatuslineUsage()
+        fetchConsoleBalance()
+        checkForUpdateIfDue()
+        if organizations.isEmpty { fetchOrganizations() }
+
+        if sessionCookie.isEmpty {
+            if !statuslineApplied { showOnMain(error: "Session cookie not set") }
             return
         }
 
-        // If not in cookie, fetch from bootstrap
-        guard let url = URL(string: "https://claude.ai/api/bootstrap") else {
+        setLoading(true, error: nil)
+        fetchOrganizationId { [weak self] resolvedId in
+            guard let orgId = resolvedId else {
+                self?.showOnMain(error: "Could not get org ID from cookie", stopLoading: true)
+                return
+            }
+            self?.fetchAllEndpoints(orgId: orgId)
+        }
+    }
+
+    private func setLoading(_ loading: Bool, error: String?) {
+        isLoading = loading
+        errorMessage = error
+    }
+
+    /// Affiche une erreur depuis n'importe quel thread ; la barre de menu suit si le chargement continue.
+    private func showOnMain(error message: String, stopLoading: Bool = false) {
+        DispatchQueue.main.async { [self] in
+            if stopLoading {
+                setLoading(false, error: message)
+            } else {
+                errorMessage = message
+                updateStatusBar()
+            }
+        }
+    }
+
+    private func fetchAllEndpoints(orgId: String) {
+        fetchUsageWithOrgId(orgId)
+        fetchExtraUsage(orgId)
+        fetchFreeCredits(orgId)
+        fetchLimitResets(orgId)
+    }
+
+    // MARK: Requêtes
+
+    /// Requête GET vers claude.ai avec les en-têtes donnés ; nil si l'adresse est invalide.
+    func claudeRequest(_ address: String, headers: [String: String]) -> URLRequest? {
+        guard let url = URL(string: address) else { return nil }
+        var prepared = URLRequest(url: url)
+        for (name, value) in headers { prepared.setValue(value, forHTTPHeaderField: name) }
+        return prepared
+    }
+
+    func perform(_ request: URLRequest, then handle: @escaping (Data?, URLResponse?) -> Void) {
+        URLSession.shared.dataTask(with: request) { data, response, _ in handle(data, response) }.resume()
+    }
+
+    // MARK: Organisation
+
+    /// Le choix de l'utilisateur ou le cookie `lastActiveOrg` d'abord, sinon l'endpoint bootstrap.
+    func fetchOrganizationId(completion: @escaping (String?) -> Void) {
+        if let knownId = effectiveOrganizationId() {
+            completion(knownId)
+            return
+        }
+        guard let request = claudeRequest("https://claude.ai/api/bootstrap",
+                                          headers: ["Cookie": "sessionKey=\(sessionCookie)"]) else {
             completion(nil)
             return
         }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("sessionKey=\(sessionCookie)", forHTTPHeaderField: "Cookie")
-
-        NSLog("📡 Fetching bootstrap to get org ID...")
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let account = json["account"] as? [String: Any],
-                  let lastActiveOrgId = account["lastActiveOrgId"] as? String else {
-                NSLog("❌ Could not parse org ID from bootstrap")
-                completion(nil)
-                return
-            }
-            NSLog("✅ Got org ID from bootstrap")
-            completion(lastActiveOrgId)
-        }.resume()
+        NSLog("📡 Lecture de bootstrap pour trouver l'organisation…")
+        perform(request) { data, _ in
+            let orgId = data.flatMap(Self.lastActiveOrganizationId(inBootstrap:))
+            NSLog(orgId == nil ? "❌ Organisation introuvable dans bootstrap" : "✅ Organisation lue dans bootstrap")
+            completion(orgId)
+        }
     }
+
+    private static func lastActiveOrganizationId(inBootstrap data: Data) -> String? {
+        let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let account = root?["account"] as? [String: Any]
+        return account?["lastActiveOrgId"] as? String
+    }
+
+    // MARK: Suivi des réponses
 
     func noteFetchResult(statusCode: Int) {
         refreshPolicy.record(statusCode: statusCode)
         isRefreshSlowed = refreshPolicy.isSlowed
-        if (200..<300).contains(statusCode) { consecutiveAuthFailures = 0 }
-        else if statusCode == 401 || statusCode == 403 { consecutiveAuthFailures += 1; evaluateAlerts() }
+        switch statusCode {
+        case 200..<300:
+            consecutiveAuthFailures = 0
+        case 401, 403:
+            consecutiveAuthFailures += 1
+            evaluateAlerts()
+        default:
+            break
+        }
     }
 
-    /// Applique les limites lues dans le statusline de Claude Code. Retourne false si la source est absente.
+    // MARK: Statusline Claude Code
+
+    /// Applique les limites lues dans le statusline de Claude Code. Renvoie false si la source est absente.
     @discardableResult
     func applyStatuslineUsage() -> Bool {
         guard let usage = StatuslineUsage.loadNewest() else { return false }
         // Un statusline plus ancien que la dernière donnée affichée ne doit pas la remplacer :
-        // au Refresh, il écrasait les vraies valeurs réseau le temps du chargement.
-        guard StatuslineUsage.shouldReplace(displayedAt: lastUpdated, hasDisplayedData: hasFetchedData, capturedAt: usage.capturedAt) else { return true }
-        if let session = usage.fiveHour {
-            sessionUsage = Int(session.usedPercentage)
-            sessionResetsAt = session.resetsAt
+        // au Refresh, il écrasait les vraies valeurs réseau pendant le chargement.
+        let isNewer = StatuslineUsage.shouldReplace(displayedAt: lastUpdated,
+                                                    hasDisplayedData: hasFetchedData,
+                                                    capturedAt: usage.capturedAt)
+        guard isNewer else { return true }
+
+        if let fiveHour = usage.fiveHour {
+            sessionUsage = Int(fiveHour.usedPercentage)
+            sessionResetsAt = fiveHour.resetsAt
         }
-        if let weekly = usage.sevenDay {
-            weeklyUsage = Int(weekly.usedPercentage)
-            weeklyResetsAt = weekly.resetsAt
+        if let sevenDay = usage.sevenDay {
+            weeklyUsage = Int(sevenDay.usedPercentage)
+            weeklyResetsAt = sevenDay.resetsAt
         }
         lastUpdated = usage.capturedAt
         usageSource = "statusline"
         recordSample(at: usage.capturedAt)
-        errorMessage = nil
-        hasFetchedData = true
-        updatePercentages()
-        updateStatusBar()
+        (errorMessage, hasFetchedData) = (nil, true)
+        refreshDisplay()
         return true
     }
 
-    func fetchUsage() {
-        // Sans cookie, le statusline suffit ; avec cookie, il sert de repli si le réseau échoue.
-        let hasStatusline = applyStatuslineUsage()
-        fetchConsoleBalance()
-        checkForUpdateIfDue()
-        if organizations.isEmpty { fetchOrganizations() }
-        guard !sessionCookie.isEmpty else {
-            if !hasStatusline {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Session cookie not set"
-                    self.updateStatusBar()
-                }
-            }
-            return
-        }
-
-        isLoading = true
-        errorMessage = nil
-
-        // Extract org ID from cookie
-        fetchOrganizationId { [weak self] orgId in
-            guard let self = self, let orgId = orgId else {
-                DispatchQueue.main.async {
-                    self?.errorMessage = "Could not get org ID from cookie"
-                    self?.isLoading = false
-                }
-                return
-            }
-
-            self.fetchUsageWithOrgId(orgId)
-            self.fetchExtraUsage(orgId)
-            self.fetchFreeCredits(orgId)
-            self.fetchLimitResets(orgId)
-        }
+    private func refreshDisplay() {
+        [updatePercentages, updateStatusBar].forEach { $0() }
     }
 
-    // Usage-limit resets the account can still use. claude.ai's Settings > Usage reads
-    // the same `cedar_ember` object from /usage with `cedar_ember=1`; we only GET it.
+    // MARK: Remises à zéro de limite
+
+    /// Les mêmes données que Réglages > Usage sur claude.ai (`cedar_ember=1`) : lecture seule.
     func fetchLimitResets(_ orgId: String) {
-        guard let url = URL(string: "https://claude.ai/api/organizations/\(orgId)/usage?cedar_ember=1&skip_spend=1") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue(sessionCookie, forHTTPHeaderField: "Cookie")
-        request.setValue("*/*", forHTTPHeaderField: "Accept")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
-        request.setValue("https://claude.ai", forHTTPHeaderField: "Referer")
-        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
-        request.setValue("claude.ai", forHTTPHeaderField: "authority")
+        let address = "https://claude.ai/api/organizations/\(orgId)/usage?cedar_ember=1&skip_spend=1"
+        guard let request = claudeRequest(address, headers: browserHeaders(cookie: sessionCookie)) else { return }
 
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
-            DispatchQueue.main.async {
-                guard let self = self,
-                      let http = response as? HTTPURLResponse, http.statusCode == 200,
-                      let data = data,
-                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
-                let (left, endAt) = Self.parseLimitResets(json["cedar_ember"])
-                self.limitResetsLeft = left
-                self.limitResetsEndAt = endAt
-                NSLog("🔄 Limit resets available: \(left)")
-            }
-        }.resume()
+        perform(request) { [weak self] data, response in
+            guard (response as? HTTPURLResponse)?.statusCode == 200,
+                  let data,
+                  let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+            DispatchQueue.main.async { self?.applyLimitResets(payload["cedar_ember"]) }
+        }
     }
 
-    /// Counts resets still usable across grants (not paused, inside their window)
-    /// and returns the earliest end date among them.
-    static func parseLimitResets(_ raw: Any?, now: Date = Date()) -> (Int, Date?) {
-        guard let obj = raw as? [String: Any],
-              (obj["eligible"] as? Bool) == true,
-              let grants = obj["grants"] as? [[String: Any]] else { return (0, nil) }
-        let iso = ISO8601DateFormatter()
-        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let isoNoFrac = ISO8601DateFormatter()
-        func date(_ v: Any?) -> Date? {
-            guard let s = v as? String else { return nil }
-            return iso.date(from: s) ?? isoNoFrac.date(from: s)
-        }
-        var total = 0
-        var earliestEnd: Date?
-        for g in grants {
-            let left = (g["resets_left"] as? Int) ?? 0
-            guard left > 0, (g["paused"] as? Bool) != true,
-                  let end = date(g["ends_at"]), end > now else { continue }
-            if let start = date(g["starts_at"]), start > now { continue }
-            total += left
-            earliestEnd = min(earliestEnd ?? end, end)
-        }
-        return (total, earliestEnd)
+    private func applyLimitResets(_ rawGrants: Any?) {
+        let (count, endDate) = Self.parseLimitResets(rawGrants)
+        limitResetsLeft = count
+        limitResetsEndAt = endDate
+        NSLog("🔄 Remises à zéro disponibles : \(count)")
     }
 
+    private func browserHeaders(cookie: String) -> [String: String] {
+        [
+            "Cookie": cookie,
+            "Accept": "*/*",
+            "Content-Type": "application/json",
+            "Origin": "https://claude.ai",
+            "Referer": "https://claude.ai",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "authority": "claude.ai",
+        ]
+    }
 }
