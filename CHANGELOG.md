@@ -2,7 +2,7 @@
 
 Format : une section par version, la plus récente en haut.
 
-## 1.14.0 : 20 octobre 2026
+## 1.14.1 : 20 octobre 2026
 
 ### Ajouté
 - **Nouveau nom : UsageForecast**, partout : application (`UsageForecast.app`), exécutable, icône, archives de release (`UsageForecast-X.Y.Z-arm64.zip`), dossier de données (`~/Library/Application Support/UsageForecast`), relais mobile (`usageforecast-relay`).
@@ -14,6 +14,7 @@ Format : une section par version, la plus récente en haut.
 - **Site** (`docs/`, servi par GitHub Pages), `SECURITY.md`, modèles d'issue.
 
 ### Modifié
+- **Identifiant technique renommé** (`com.alane.usageforecast`, comme l'application Android), ainsi que le relais mobile (`usageforecast-relay`), le titre de l'application mobile et les constantes de chiffrement : un Mac déjà appairé doit réassocier son téléphone.
 - **Code réécrit** : l'ensemble de l'analyse des réponses, des crédits, des réglages, du suivi des services, de la récupération, de la fenêtre, du popover et des raccourcis est réécrit, avec des fonctions plus courtes et des retours anticipés (comportement et textes inchangés : 337 tests et 22 rendus de référence identiques).
 - Anciens scripts de DMG, ancien logo et ancienne chaîne de build supprimés ; plus aucun lien vers l'ancien projet.
 - Dépôt renommé `Alane38/usageforecast`. README réécrit pour le public.
