@@ -16,10 +16,12 @@ struct DayBudgetRow: View {
     let budget: DayBudget
     var showsBar = false
 
-    private var textColor: Color { budget.level == .ok ? Color.secondaryText : budget.tone.color }
+    private var textColor: Color { budget.level == .ok ? .secondaryText : budget.tone.color }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+    var body: some View { summary }
+
+    private var summary: some View {
+        LeadingColumn(spacing: 4) {
             Text(DayBudgetText.line(budget))
                 .font(.caption)
                 .fontWeight(budget.level == .ok ? .regular : .medium)
@@ -28,7 +30,7 @@ struct DayBudgetRow: View {
                 GaugeBar(used: min(budget.fraction, 1) * 100, projected: nil, expected: nil, tone: budget.tone)
             }
             if let consequence = DayBudgetText.consequence(budget) {
-                Text(consequence).font(.caption).foregroundColor(Color.secondaryText)
+                Text(consequence).font(.caption).foregroundColor(.secondaryText)
             }
         }
         .accessibilityElement(children: .combine)

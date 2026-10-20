@@ -10,7 +10,9 @@ struct MobileTab: View {
 
     private var relayIsInvalid: Bool { !usageManager.mobileRelayText.isEmpty && usageManager.mobileRelay == nil }
 
-    var body: some View {
+    var body: some View { settingsForm }
+
+    private var settingsForm: some View {
         Form {
             Section("Synchronisation avec ton téléphone") {
                 Toggle("Activer la synchro mobile", isOn: Binding(get: { usageManager.mobileSyncEnabled }, set: { usageManager.setMobileSync($0) }))
@@ -92,8 +94,9 @@ struct MobileTab: View {
     }
 
     private func copy(_ url: URL) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(url.absoluteString, forType: .string)
+        let board = NSPasteboard.general
+        board.clearContents()
+        board.setString(url.absoluteString, forType: .string)
         copied = true
     }
 }

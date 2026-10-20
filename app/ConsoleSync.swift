@@ -4,6 +4,22 @@ import Foundation
 extension UsageManager {
     private static let secrets = AppSecrets.store
     private static let consoleAccount = AppSecrets.consoleAccount
+    private static let browserUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+    /// En-têtes que la Console attend d'un navigateur ; seul le cookie change d'un appel à l'autre.
+    private static func consoleRequest(url: URL, cookie: String) -> URLRequest {
+        var urlRequest = URLRequest(url: url)
+        let headers = [
+            "Cookie": cookie,
+            "Accept": "application/json",
+            "anthropic-client-platform": "web_console",
+            "Referer": "https://platform.claude.com/settings/billing",
+            "Origin": "https://platform.claude.com",
+            "User-Agent": browserUserAgent,
+        ]
+        for (name, value) in headers { urlRequest.setValue(value, forHTTPHeaderField: name) }
+        return urlRequest
+    }
 
     func loadConsoleCookie() {
         guard !CommandLine.arguments.contains("--no-keychain") else { return }
@@ -37,11 +53,13 @@ extension UsageManager {
 
         var responses: [String: (status: Int, data: Data?)] = [:]
         let group = DispatchGroup()
+        let mainQueue = DispatchQueue.main
         for path in ["prepaid/credits", "current_spend"] {
             group.enter()
             URLSession.shared.dataTask(with: consoleRequest(orgId: orgId, path: path)) { data, response, _ in
-                DispatchQueue.main.async {
-                    responses[path] = ((response as? HTTPURLResponse)?.statusCode ?? 0, data)
+                let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+                mainQueue.async {
+                    responses[path] = (code, data)
                     group.leave()
                 }
             }.resume()
@@ -50,14 +68,8 @@ extension UsageManager {
     }
 
     private func consoleRequest(orgId: String, path: String) -> URLRequest {
-        var request = URLRequest(url: URL(string: "https://platform.claude.com/api/organizations/\(orgId)/\(path)")!)
-        request.setValue(consoleCookie, forHTTPHeaderField: "Cookie")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue("web_console", forHTTPHeaderField: "anthropic-client-platform")
-        request.setValue("https://platform.claude.com/settings/billing", forHTTPHeaderField: "Referer")
-        request.setValue("https://platform.claude.com", forHTTPHeaderField: "Origin")
-        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
-        return request
+        let endpoint = URL(string: "https://platform.claude.com/api/organizations/\(orgId)/\(path)")!
+        return Self.consoleRequest(url: endpoint, cookie: consoleCookie)
     }
 
     private func applyConsole(_ responses: [String: (status: Int, data: Data?)]) {
@@ -123,13 +135,7 @@ extension UsageManager {
     func probeConsole() {
         guard !sessionCookie.isEmpty else { print("sonde : pas de cookie claude.ai"); return }
         func get(_ path: String) -> (Int, Any?) {
-            var request = URLRequest(url: URL(string: "https://platform.claude.com/api/\(path)")!)
-            request.setValue(sessionCookie, forHTTPHeaderField: "Cookie")
-            request.setValue("application/json", forHTTPHeaderField: "Accept")
-            request.setValue("web_console", forHTTPHeaderField: "anthropic-client-platform")
-            request.setValue("https://platform.claude.com/settings/billing", forHTTPHeaderField: "Referer")
-            request.setValue("https://platform.claude.com", forHTTPHeaderField: "Origin")
-            request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
+            let request = Self.consoleRequest(url: URL(string: "https://platform.claude.com/api/\(path)")!, cookie: sessionCookie)
             let done = DispatchSemaphore(value: 0)
             var result: (Int, Any?) = (0, nil)
             URLSession.shared.dataTask(with: request) { data, response, _ in

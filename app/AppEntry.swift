@@ -1,15 +1,15 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
-// Main entry point
+/// Point d'entrée : l'app vit dans la barre de menu, sans icône dans le Dock.
 @main
 struct Main {
     static func main() {
         AppSupport.migrateLegacy()
-        let app = NSApplication.shared
-        let delegate = AppDelegate()
-        app.delegate = delegate
-        app.setActivationPolicy(.accessory)
-        app.run()
+        let application = NSApplication.shared
+        let appDelegate = AppDelegate()
+        application.delegate = appDelegate
+        application.setActivationPolicy(.accessory)
+        application.run()
     }
 }

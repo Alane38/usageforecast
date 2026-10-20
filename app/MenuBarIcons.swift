@@ -23,25 +23,25 @@ enum MenuBarIcons {
 
     /// Anneau externe : semaine. Anneau interne : session.
     static func dualRing(session: Double, weekly: Double, sessionTone: UsageTone, weeklyTone: UsageTone) -> NSImage {
-        let image = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
+        let icon = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
             let center = NSPoint(x: rect.midX, y: rect.midY)
             drawRing(center: center, radius: 7.6, width: 2, percent: weekly, color: color(for: weeklyTone))
             drawRing(center: center, radius: 4.0, width: 2, percent: session, color: color(for: sessionTone))
             return true
         }
-        image.isTemplate = false
-        return image
+        icon.isTemplate = false
+        return icon
     }
 
     /// Deux barres fines : session au-dessus, semaine en dessous.
     static func twoValues(session: Double, weekly: Double, sessionTone: UsageTone, weeklyTone: UsageTone) -> NSImage {
-        let image = NSImage(size: NSSize(width: 24, height: 14), flipped: false) { rect in
+        let icon = NSImage(size: NSSize(width: 24, height: 14), flipped: false) { rect in
             drawBar(in: NSRect(x: 0, y: 8, width: rect.width, height: 4), percent: session, color: color(for: sessionTone))
             drawBar(in: NSRect(x: 0, y: 2, width: rect.width, height: 4), percent: weekly, color: color(for: weeklyTone))
             return true
         }
-        image.isTemplate = false
-        return image
+        icon.isTemplate = false
+        return icon
     }
 
     private static func track() -> NSColor { NSColor.labelColor.withAlphaComponent(0.25) }

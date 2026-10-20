@@ -39,13 +39,13 @@ enum MobileUploader {
 
     static func request(relay: URL, id: String, blob: String, token: String) -> URLRequest? {
         guard let url = endpoint(relay: relay, id: id) else { return nil }
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.httpBody = Data(blob.utf8)
-        request.setValue(token, forHTTPHeaderField: "X-Write-Token")
-        request.setValue("text/plain; charset=utf-8", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 20
-        return request
+        var put = URLRequest(url: url)
+        put.httpMethod = "PUT"
+        put.httpBody = Data(blob.utf8)
+        put.setValue(token, forHTTPHeaderField: "X-Write-Token")
+        put.setValue("text/plain; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        put.timeoutInterval = 20
+        return put
     }
 
     /// Message lisible pour la fenêtre des Réglages.

@@ -17,9 +17,7 @@ private struct HistoryPlot: View, Equatable {
             && lhs.points.last?.time == rhs.points.last?.time && lhs.points.last?.percent == rhs.points.last?.percent
     }
 
-    var body: some View {
-        Canvas { context, size in draw(context, size) }
-    }
+    var body: some View { Canvas { context, size in draw(context, size) } }
 
     private func position(_ point: (time: Date, percent: Double), in size: CGSize, now: Date) -> CGPoint {
         CGPoint(x: inset + (size.width - 2 * inset) * CGFloat(1 - now.timeIntervalSince(point.time) / span),
@@ -106,12 +104,14 @@ struct HistoryChart: View {
         UsageAnalytics.chartCeiling(maxPercent: points.map(\.percent).max() ?? 0)
     }
 
-    var body: some View {
+    var body: some View { plotArea }
+
+    private var plotArea: some View {
         let top = ceiling   // une seule fois par évaluation
-        GeometryReader { geo in
+        return GeometryReader { proxy in
             ZStack(alignment: .topLeading) {
                 HistoryPlot(points: points, span: span, color: color, ceiling: top, inset: inset).equatable()
-                hoverLayer(width: geo.size.width)
+                hoverLayer(width: proxy.size.width)
             }
             .contentShape(Rectangle())
             .onContinuousHover { phase in
@@ -136,8 +136,7 @@ struct HistoryChart: View {
                     Rectangle().fill(Color.primary.opacity(0.35)).frame(width: 1, height: plotHeight).offset(x: x)
                     Text("\(AlertRules.clock(point.time)) · \(Int(point.percent.rounded())) %")
                         .font(.system(size: 10, weight: .medium))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
+                        .padding(EdgeInsets(top: 2, leading: 6, bottom: 2, trailing: 6))
                         .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .windowBackgroundColor)))
                         .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.primary.opacity(0.15), lineWidth: 0.5))
                         .offset(x: min(max(x - 36, 0), max(width - 80, 0)), y: -2)
@@ -166,10 +165,13 @@ struct HistoryDisclosure: View {
     /// Durée affichée : exactement celle des relevés disponibles.
     private var span: TimeInterval { UsageAnalytics.chartSpan(firstSample: points.first?.time) }
 
-    var body: some View {
+    var body: some View { disclosure }
+
+    @ViewBuilder
+    private var disclosure: some View {
         if points.count >= 10 {
             DisclosureGroup("Historique de la session · \(AlertRules.duration(span))", isExpanded: $isOpen) {
-                VStack(alignment: .leading, spacing: 4) {
+                LeadingColumn(spacing: 4) {
                     HistoryChart(points: points, span: span, color: usageManager.sessionTone.color)
                     HStack {
                         Text("il y a \(AlertRules.duration(span))")
@@ -177,15 +179,15 @@ struct HistoryDisclosure: View {
                         Text("maintenant")
                     }
                     .font(.system(size: 11))
-                    .foregroundColor(Color.secondaryText)
+                    .foregroundColor(.secondaryText)
                     if let today = PaceText.todayLine(usageManager.weeklyUsedToday) {
-                        Text(today).font(.caption).foregroundColor(Color.secondaryText)
+                        Text(today).font(.caption).foregroundColor(.secondaryText)
                     }
                 }
                 .padding(.top, 6)
             }
             .font(.caption)
-            .foregroundColor(Color.secondaryText)
+            .foregroundColor(.secondaryText)
         }
     }
 }

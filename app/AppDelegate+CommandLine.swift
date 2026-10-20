@@ -5,8 +5,7 @@ import SwiftUI
 extension AppDelegate {
     func runCommandLineTools() {
         if CommandLine.arguments.contains("--bench-chart") {
-            // Coût d'un dessin complet de la courbe d'historique : `--bench-chart [nombre de relevés]` (1 440 = 24 h).
-            DispatchQueue.main.async {
+            DispatchQueue.main.async {   // coût d'un dessin complet de la courbe : `--bench-chart [nombre de relevés]` (1 440 = 24 h)
                 let count = Snapshot.option("--bench-chart").flatMap(Int.init) ?? 1440
                 let now = Date()
                 var points: [(time: Date, percent: Double)] = []

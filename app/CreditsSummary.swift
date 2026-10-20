@@ -40,11 +40,11 @@ struct CreditsSummary: Equatable {
     }
 
     static func money(_ value: Double, _ currency: String) -> String {
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 2
-        let number = formatter.string(from: NSNumber(value: value)) ?? String(value)
+        let amounts = NumberFormatter()
+        amounts.locale = Locale(identifier: "fr_FR")
+        amounts.minimumFractionDigits = 0
+        amounts.maximumFractionDigits = 2
+        let number = amounts.string(from: NSNumber(value: value)) ?? String(value)
         return "\(number) \(currency == "USD" ? "$" : currency)"
     }
 }

@@ -19,7 +19,27 @@ struct GeneralTab: View {
         return "\(days.count) · depuis le \(since)"
     }
 
-    var body: some View {
+    private func binding(_ read: @escaping () -> Bool, write: @escaping (Bool) -> Void) -> Binding<Bool> {
+        Binding(get: read, set: write)
+    }
+
+    private var manager: UsageManager { usageManager }
+
+    /// Applique le changement puis l'écrit dans les réglages : un seul chemin pour tous les interrupteurs.
+    private func commit(_ change: () -> Void) {
+        change()
+        manager.saveSettings()
+    }
+
+    private func open(_ address: String) {
+        guard let url = URL(string: address) else { return }
+        let workspace = NSWorkspace.shared
+        workspace.open(url)
+    }
+
+    var body: some View { settingsForm }
+
+    private var settingsForm: some View {
         Form {
             Section("À propos") {
                 LabeledContent("Version", value: versionLabel)
@@ -29,7 +49,7 @@ struct GeneralTab: View {
                 }
                 .buttonStyle(.link)
                 Button("Voir le code et le journal des changements") {
-                    NSWorkspace.shared.open(URL(string: "https://github.com/Alane38/usageforecast")!)
+                    open("https://github.com/Alane38/usageforecast")
                 }
                 .buttonStyle(.link)
                 Toggle("Prévenir des nouvelles versions", isOn: Binding(
@@ -44,9 +64,12 @@ struct GeneralTab: View {
                 Text("Une requête publique à GitHub toutes les 6 h, sans aucune donnée envoyée.").font(.caption).foregroundColor(.secondary)
             }
             Section("Démarrage") {
-                Toggle("Ouvrir à la connexion", isOn: Binding(
-                    get: { usageManager.openAtLogin },
-                    set: { usageManager.openAtLogin = $0; usageManager.applyLoginItem($0); usageManager.saveSettings() }))
+                Toggle("Ouvrir à la connexion", isOn: binding({ usageManager.openAtLogin }, write: { enabled in
+                    commit {
+                        usageManager.openAtLogin = enabled
+                        usageManager.applyLoginItem(enabled)
+                    }
+                }))
             }
             Section("Journal quotidien") {
                 LabeledContent("Jours enregistrés", value: dailyJournalLabel)
@@ -63,17 +86,14 @@ struct GeneralTab: View {
                     .foregroundColor(.secondary)
             }
             Section("Raccourci clavier") {
-                Toggle("Afficher le popover avec ⌘U", isOn: Binding(
-                    get: { usageManager.shortcutEnabled },
-                    set: {
-                        usageManager.shortcutEnabled = $0
-                        usageManager.saveSettings()
-                        (NSApp.delegate as? AppDelegate)?.setShortcutEnabled($0)
-                    }))
+                Toggle("Afficher le popover avec ⌘U", isOn: binding({ usageManager.shortcutEnabled }, write: { enabled in
+                    commit { usageManager.shortcutEnabled = enabled }
+                    (NSApp.delegate as? AppDelegate)?.setShortcutEnabled(enabled)
+                }))
                 Text("À désactiver s'il entre en conflit avec une autre application.").font(.caption).foregroundColor(.secondary)
-                if usageManager.shortcutEnabled && !usageManager.isAccessibilityEnabled {
+                if usageManager.shortcutEnabled, !usageManager.isAccessibilityEnabled {
                     Button("Autoriser l'Accessibilité") {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                        open("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
                     }
                 }
             }

@@ -35,10 +35,10 @@ enum PaceText {
     /// « Rythme récent : 12 %/h · 100 % vers 18 h 40 » ; nil quand le rythme est négligeable et sans échéance.
     static func recentLine(_ recent: RecentForecast?) -> String? {
         guard let recent, recent.ratePerHour >= 1 || recent.exhaustsAt != nil else { return nil }
-        let formatter = NumberFormatter()
-        formatter.locale = Locale(identifier: "fr_FR")
-        formatter.maximumFractionDigits = recent.ratePerHour < 10 ? 1 : 0
-        let rate = formatter.string(from: NSNumber(value: recent.ratePerHour)) ?? "?"
+        let rates = NumberFormatter()
+        rates.locale = Locale(identifier: "fr_FR")
+        rates.maximumFractionDigits = recent.ratePerHour < 10 ? 1 : 0
+        let rate = rates.string(from: NSNumber(value: recent.ratePerHour)) ?? "?"
         var line = "Rythme récent : \(rate) %/h"
         if let eta = recent.exhaustsAt { line += " · 100 % vers \(AlertRules.clock(eta))" }
         return line

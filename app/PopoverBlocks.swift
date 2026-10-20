@@ -16,11 +16,13 @@ struct GaugeBar: View {
         total * CGFloat(min(max(percent, 0), 100) / 100)
     }
 
-    var body: some View {
-        GeometryReader { geo in
-            let total = geo.size.width
-            ZStack(alignment: .leading) {
-                ZStack(alignment: .leading) {
+    var body: some View { gauge }
+
+    private var gauge: some View {
+        GeometryReader { proxy in
+            let total = proxy.size.width
+            ZStack(alignment: Alignment.leading) {
+                ZStack(alignment: Alignment.leading) {
                     Rectangle().fill(Color.primary.opacity(0.12))
                     if let projected, projected > used {
                         Rectangle().fill(tone.color.opacity(0.3)).frame(width: width(projected, total))
@@ -53,8 +55,10 @@ struct PaceChip: View {
     let text: String
     let tone: UsageTone
 
-    var body: some View {
-        HStack(spacing: 5) {
+    var body: some View { chip }
+
+    private var chip: some View {
+        HStack(alignment: .center, spacing: 5) {
             Circle().fill(tone.color).frame(width: 6, height: 6)
             Text(text).font(.system(size: 11, weight: .medium)).foregroundColor(tone.color)
         }
@@ -67,7 +71,9 @@ struct RingView: View {
     let tone: UsageTone
     var size: CGFloat = 52
 
-    var body: some View {
+    var body: some View { ring }
+
+    private var ring: some View {
         ZStack {
             Circle().stroke(Color.primary.opacity(0.12), lineWidth: 5)
             Circle()
