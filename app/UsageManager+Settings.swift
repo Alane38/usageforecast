@@ -4,17 +4,31 @@ import WebKit
 import Carbon
 import ServiceManagement
 
+private enum SettingsKey {
+    static let usageNotifications = "usage_notifications_enabled"
+    static let statusNotifications = "status_notifications_enabled"
+    static let legacyNotifications = "notifications_enabled"
+    static let openAtLogin = "open_at_login"
+    static let shortcut = "shortcut_enabled"
+    static let lastNotifiedThreshold = "last_notified_threshold"
+    static let legacyCookie = "claude_session_cookie"
+}
+
+private extension UserDefaults {
+    func hasValue(forKey key: String) -> Bool { object(forKey: key) != nil }
+}
+
 extension UsageManager {
-    func checkAccessibilityStatus() {
-        isAccessibilityEnabled = AXIsProcessTrusted()
-    }
+    func checkAccessibilityStatus() { isAccessibilityEnabled = AXIsProcessTrusted() }
 
     static let cookieStore = AppSecrets.store
     static let cookieAccount = AppSecrets.claudeAccount
 
     /// Lit le cookie dans le Keychain. Un cookie resté en clair dans UserDefaults (anciennes versions)
     /// est migré une fois, puis effacé du .plist.
-    func loadSessionCookie() {
+    func loadSessionCookie() { restoreCookieFromSecretStore() }
+
+    private func restoreCookieFromSecretStore() {
         guard !CommandLine.arguments.contains("--no-keychain") else { return }
         let stored = Self.cookieStore.readResult(account: Self.cookieAccount)
         if let value = stored.value {
@@ -25,52 +39,54 @@ extension UsageManager {
             // L'élément existe mais la lecture est refusée (autorisation du trousseau non accordée).
             keychainIssue = "Stockage des secrets : accès refusé (code \(stored.status))"
         }
-        guard let legacy = UserDefaults.standard.string(forKey: "claude_session_cookie") else { return }
-        sessionCookie = legacy
-        if Self.cookieStore.write(legacy, account: Self.cookieAccount) {
-            UserDefaults.standard.removeObject(forKey: "claude_session_cookie")
+        guard let legacyCookie = UserDefaults.standard.string(forKey: SettingsKey.legacyCookie) else { return }
+        sessionCookie = legacyCookie
+        if Self.cookieStore.write(legacyCookie, account: Self.cookieAccount) {
+            UserDefaults.standard.removeObject(forKey: SettingsKey.legacyCookie)
         }
     }
 
-    func loadSettings() {
-        // Migrate from legacy single notifications_enabled flag (pre-v1.1) to split flags
-        let hasUsageKey  = UserDefaults.standard.object(forKey: "usage_notifications_enabled")  != nil
-        let hasStatusKey = UserDefaults.standard.object(forKey: "status_notifications_enabled") != nil
+    func loadSettings() { restorePreferences() }
 
-        if !hasUsageKey || !hasStatusKey {
-            let legacyHasKey = UserDefaults.standard.object(forKey: "notifications_enabled") != nil
-            let legacyValue  = legacyHasKey ? UserDefaults.standard.bool(forKey: "notifications_enabled") : true
-            if !hasUsageKey {
-                usageNotificationsEnabled = legacyValue
-                UserDefaults.standard.set(legacyValue, forKey: "usage_notifications_enabled")
-            }
-            if !hasStatusKey {
-                statusNotificationsEnabled = legacyValue
-                UserDefaults.standard.set(legacyValue, forKey: "status_notifications_enabled")
-            }
+    private func restorePreferences() {
+        let defaults = UserDefaults.standard
+        migrateLegacyNotificationFlag(defaults)
+
+        if defaults.hasValue(forKey: SettingsKey.usageNotifications) {
+            usageNotificationsEnabled = defaults.bool(forKey: SettingsKey.usageNotifications)
         }
-        if hasUsageKey {
-            usageNotificationsEnabled = UserDefaults.standard.bool(forKey: "usage_notifications_enabled")
-        }
-        if hasStatusKey {
-            statusNotificationsEnabled = UserDefaults.standard.bool(forKey: "status_notifications_enabled")
+        if defaults.hasValue(forKey: SettingsKey.statusNotifications) {
+            statusNotificationsEnabled = defaults.bool(forKey: SettingsKey.statusNotifications)
         }
 
-        // Reflect the real system login-item state, not just a stored bool.
-        if #available(macOS 13.0, *) {
-            openAtLogin = (SMAppService.mainApp.status == .enabled)
+        // L'état réel de l'élément de connexion système prime sur la valeur mémorisée.
+        if #available(macOS 13, *) {
+            openAtLogin = SMAppService.mainApp.status == .enabled
         } else {
-            openAtLogin = UserDefaults.standard.bool(forKey: "open_at_login")
+            openAtLogin = defaults.bool(forKey: SettingsKey.openAtLogin)
         }
-        lastNotifiedThreshold = UserDefaults.standard.integer(forKey: "last_notified_threshold")
-        // Default shortcut to enabled if not previously set
-        if UserDefaults.standard.object(forKey: "shortcut_enabled") == nil {
-            shortcutEnabled = true
-        } else {
-            shortcutEnabled = UserDefaults.standard.bool(forKey: "shortcut_enabled")
-        }
+        lastNotifiedThreshold = defaults.integer(forKey: SettingsKey.lastNotifiedThreshold)
+        shortcutEnabled = defaults.hasValue(forKey: SettingsKey.shortcut)
+            ? defaults.bool(forKey: SettingsKey.shortcut)
+            : true
         loadDisplaySettings()
         loadSelectedOrganization()
+    }
+
+    /// Avant la v1.1, un seul réglage `notifications_enabled` couvrait les deux familles d'alertes.
+    private func migrateLegacyNotificationFlag(_ defaults: UserDefaults) {
+        let missingKeys = [SettingsKey.usageNotifications, SettingsKey.statusNotifications]
+            .filter { !defaults.hasValue(forKey: $0) }
+        guard !missingKeys.isEmpty else { return }
+
+        let legacyValue = defaults.hasValue(forKey: SettingsKey.legacyNotifications)
+            ? defaults.bool(forKey: SettingsKey.legacyNotifications)
+            : true
+        for key in missingKeys {
+            defaults.set(legacyValue, forKey: key)
+        }
+        if missingKeys.contains(SettingsKey.usageNotifications) { self.usageNotificationsEnabled = legacyValue }
+        if missingKeys.contains(SettingsKey.statusNotifications) { self.statusNotificationsEnabled = legacyValue }
     }
 
     var sessionForecast: WindowForecast? {
@@ -84,77 +100,70 @@ extension UsageManager {
     }
 
     var apiCredits: ApiCredits? {
-        apiCreditCycleEnd.map { ApiCredits(monthlyAmount: apiCreditMonthly, spent: apiCreditSpent, cycleEndsAt: $0) }
+        guard let cycleEnd = apiCreditCycleEnd else { return nil }
+        return ApiCredits(monthlyAmount: apiCreditMonthly, spent: apiCreditSpent, cycleEndsAt: cycleEnd)
     }
 
-    func saveSettings() {
-        UserDefaults.standard.set(usageNotificationsEnabled,  forKey: "usage_notifications_enabled")
-        UserDefaults.standard.set(statusNotificationsEnabled, forKey: "status_notifications_enabled")
-        UserDefaults.standard.set(openAtLogin, forKey: "open_at_login")
-        UserDefaults.standard.set(shortcutEnabled, forKey: "shortcut_enabled")
-        UserDefaults.standard.synchronize()
+    func saveSettings() { persistPreferences() }
+
+    private func persistPreferences() {
+        let defaults = UserDefaults.standard
+        defaults.set(usageNotificationsEnabled, forKey: SettingsKey.usageNotifications)
+        defaults.set(statusNotificationsEnabled, forKey: SettingsKey.statusNotifications)
+        defaults.set(openAtLogin, forKey: SettingsKey.openAtLogin)
+        defaults.set(shortcutEnabled, forKey: SettingsKey.shortcut)
+        defaults.synchronize()
     }
 
-    // Actually register/unregister the app as a macOS login item.
-    func applyLoginItem(_ enabled: Bool) {
-        guard #available(macOS 13.0, *) else { return }
+    /// Inscrit ou retire réellement l'app des éléments de connexion de macOS.
+    func applyLoginItem(_ enabled: Bool) { syncLoginItem(wanted: enabled) }
+
+    private func syncLoginItem(wanted enabled: Bool) {
+        guard #available(macOS 13, *) else { return }
+        let service = SMAppService.mainApp
+        let isRegistered = service.status == .enabled
         do {
-            if enabled {
-                if SMAppService.mainApp.status != .enabled {
-                    try SMAppService.mainApp.register()
-                }
-            } else {
-                if SMAppService.mainApp.status == .enabled {
-                    try SMAppService.mainApp.unregister()
-                }
+            if enabled && !isRegistered {
+                try service.register()
+            } else if !enabled && isRegistered {
+                try service.unregister()
             }
-            NSLog("🔑 Login item \(enabled ? "registered" : "unregistered")")
+            NSLog("🔑 Lancement à la connexion \(enabled ? "activé" : "désactivé")")
         } catch {
-            NSLog("❌ Login item error: \(error.localizedDescription)")
+            NSLog("❌ Lancement à la connexion impossible : \(error.localizedDescription)")
         }
     }
 
-    func saveSessionCookie(_ cookie: String) {
-        NSLog("ClaudeUsage: Saving cookie, length: \(cookie.count)")
-        sessionCookie = cookie
-        if !Self.cookieStore.write(cookie, account: Self.cookieAccount) {
-            NSLog("ClaudeUsage: secret storage write failed, cookie kept in memory only")
-        }
+    func saveSessionCookie(_ cookie: String) { storeCookie(cookie) }
+
+    private func storeCookie(_ cookie: String) {
+        NSLog("Cookie enregistré (\(cookie.count) caractères)")
+        self.sessionCookie = cookie
+        let stored = Self.cookieStore.write(cookie, account: Self.cookieAccount)
+        if !stored { NSLog("Écriture dans le stockage des secrets impossible : cookie gardé en mémoire seulement") }
     }
 
-    func clearSessionCookie() {
-        NSLog("ClaudeUsage: Clearing cookie")
-        sessionCookie = ""
+    func clearSessionCookie() { eraseCookieAndData() }
+
+    private func eraseCookieAndData() {
+        NSLog("Cookie effacé, données remises à zéro")
+        self.sessionCookie = ""
         Self.cookieStore.delete(account: Self.cookieAccount)
-        UserDefaults.standard.removeObject(forKey: "claude_session_cookie")
-
-        // Reset all data
-        sessionUsage = 0
-        weeklyUsage = 0
-        weeklySonnetUsage = 0
-        weeklyFableUsage = 0
-        sessionResetsAt = nil
-        weeklyResetsAt = nil
-        weeklySonnetResetsAt = nil
-        weeklyFableResetsAt = nil
-        extraSpentMinor = 0
-        extraLimitMinor = 0
-        extraResetsAt = nil
-        freeCreditsMinor = 0
-        limitResetsLeft = 0
-        limitResetsEndAt = nil
-        hasCreditUsage = false
-        hasFetchedData = false
-        hasWeeklySonnet = false
-        hasWeeklyFable = false
-        errorMessage = nil
-        lastNotifiedThreshold = 0
-        UserDefaults.standard.set(0, forKey: "last_notified_threshold")
-
-        // Update status bar to show 0%
-        delegate?.updateStatusIcon(percentage: 0)
-
-        NSLog("ClaudeUsage: Cookie cleared, data reset")
+        UserDefaults.standard.removeObject(forKey: SettingsKey.legacyCookie)
+        resetUsageData()
+        self.lastNotifiedThreshold = 0
+        UserDefaults.standard.set(0, forKey: SettingsKey.lastNotifiedThreshold)
+        self.delegate?.updateStatusIcon(percentage: 0)
     }
 
+    private func resetUsageData() {
+        (sessionUsage, weeklyUsage, weeklySonnetUsage, weeklyFableUsage) = (0, 0, 0, 0)
+        (sessionResetsAt, weeklyResetsAt) = (nil, nil)
+        (weeklySonnetResetsAt, weeklyFableResetsAt) = (nil, nil)
+        (extraSpentMinor, extraLimitMinor, extraResetsAt) = (0, 0, nil)
+        (freeCreditsMinor, limitResetsLeft, limitResetsEndAt) = (0, 0, nil)
+        (hasCreditUsage, hasFetchedData) = (false, false)
+        (hasWeeklySonnet, hasWeeklyFable) = (false, false)
+        self.errorMessage = nil
+    }
 }

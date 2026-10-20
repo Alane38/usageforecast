@@ -1,192 +1,169 @@
 import SwiftUI
 import AppKit
 
+/// Lecture d'un nœud de la réponse : pourcentage (entier) et date de remise à zéro, chacun optionnel.
+private struct WindowReading {
+    var percent: Int?
+    var resetDate: Date?
+
+    /// Nœud classique : le pourcentage est dans `utilization`, toujours décimal.
+    static func standard(_ node: [String: Any], label: String) -> WindowReading {
+        let percent = (node["utilization"] as? Double).map { Int($0) }
+        return WindowReading(percent: percent, resetDate: resetDate(in: node, label: label))
+    }
+
+    /// Entrée Fable de `limits` : `percent` peut être entier ou décimal selon la charge utile.
+    static func fable(_ node: [String: Any]) -> WindowReading {
+        let percent = (node["percent"] as? Int) ?? (node["percent"] as? Double).map { Int($0) }
+        return WindowReading(percent: percent, resetDate: resetDate(in: node, label: "Weekly Fable"))
+    }
+
+    private static func resetDate(in node: [String: Any], label: String) -> Date? {
+        guard let text = node["resets_at"] as? String else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let parsed = formatter.date(from: text)
+        NSLog(parsed == nil ? "❌ \(label) : date de remise à zéro illisible (\(text))"
+                            : "🕐 \(label) : remise à zéro le \(parsed!)")
+        return parsed
+    }
+}
+
 extension UsageManager {
-    func parseUsageData(_ data: Data) {
+    private static let fullScale = 100
+    private static let claudeSourceName = "claude.ai"
+    private static let notificationSteps = [25, 50, 75, 90]
+    private static let thresholdDefaultsKey = "last_notified_threshold"
+
+    func parseUsageData(_ data: Data) { ingestUsagePayload(data) }
+
+    private func ingestUsagePayload(_ data: Data) {
+        let decoded: Any
         do {
-            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                errorMessage = "Invalid JSON"
-                return
-            }
-
-            NSLog("📊 Parsing usage data...")
-
-            let iso8601Formatter = ISO8601DateFormatter()
-            iso8601Formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-            // Parse the actual claude.ai response format
-            if let fiveHour = json["five_hour"] as? [String: Any] {
-                if let sessionUtil = fiveHour["utilization"] as? Double {
-                    sessionUsage = Int(sessionUtil)
-                    sessionLimit = 100
-                }
-                if let resetsAtString = fiveHour["resets_at"] as? String {
-                    NSLog("🕐 Session resets_at string: \(resetsAtString)")
-                    if let resetsAt = iso8601Formatter.date(from: resetsAtString) {
-                        sessionResetsAt = resetsAt
-                        NSLog("✅ Parsed session reset time: \(resetsAt)")
-                    } else {
-                        NSLog("❌ Failed to parse session reset time")
-                    }
-                }
-            }
-
-            if let sevenDay = json["seven_day"] as? [String: Any] {
-                if let weeklyUtil = sevenDay["utilization"] as? Double {
-                    weeklyUsage = Int(weeklyUtil)
-                    weeklyLimit = 100
-                }
-                if let resetsAtString = sevenDay["resets_at"] as? String {
-                    NSLog("🕐 Weekly resets_at string: \(resetsAtString)")
-                    if let resetsAt = iso8601Formatter.date(from: resetsAtString) {
-                        weeklyResetsAt = resetsAt
-                        NSLog("✅ Parsed weekly reset time: \(resetsAt)")
-                    } else {
-                        NSLog("❌ Failed to parse weekly reset time")
-                    }
-                }
-            }
-
-            // Check for seven_day_sonnet (Pro plan feature)
-            if let sevenDaySonnet = json["seven_day_sonnet"] as? [String: Any] {
-                hasWeeklySonnet = true
-                if let sonnetUtil = sevenDaySonnet["utilization"] as? Double {
-                    weeklySonnetUsage = Int(sonnetUtil)
-                    weeklySonnetLimit = 100
-                }
-                if let resetsAtString = sevenDaySonnet["resets_at"] as? String {
-                    NSLog("🕐 Weekly Sonnet resets_at string: \(resetsAtString)")
-                    if let resetsAt = iso8601Formatter.date(from: resetsAtString) {
-                        weeklySonnetResetsAt = resetsAt
-                        NSLog("✅ Parsed weekly Sonnet reset time: \(resetsAt)")
-                    } else {
-                        NSLog("❌ Failed to parse weekly Sonnet reset time")
-                    }
-                }
-            } else {
-                hasWeeklySonnet = false
-            }
-
-            // Fable is a new, separately-counted model. It isn't a top-level
-            // key like seven_day_sonnet — it lives in the `limits` array as a
-            // model-scoped weekly limit (scope.model.display_name == "Fable").
-            // The bar is only surfaced in the UI when usage is above 1%.
-            hasWeeklyFable = false
-            if let limits = json["limits"] as? [[String: Any]] {
-                let fableLimit = limits.first { entry in
-                    let scope = entry["scope"] as? [String: Any]
-                    let model = scope?["model"] as? [String: Any]
-                    return (model?["display_name"] as? String) == "Fable"
-                }
-                if let fable = fableLimit {
-                    hasWeeklyFable = true
-                    // `percent` may decode as Int or Double depending on payload.
-                    if let p = fable["percent"] as? Int {
-                        weeklyFableUsage = p
-                    } else if let p = fable["percent"] as? Double {
-                        weeklyFableUsage = Int(p)
-                    }
-                    weeklyFableLimit = 100
-                    if let resetsAtString = fable["resets_at"] as? String {
-                        NSLog("🕐 Weekly Fable resets_at string: \(resetsAtString)")
-                        if let resetsAt = iso8601Formatter.date(from: resetsAtString) {
-                            weeklyFableResetsAt = resetsAt
-                            NSLog("✅ Parsed weekly Fable reset time: \(resetsAt)")
-                        } else {
-                            NSLog("❌ Failed to parse weekly Fable reset time")
-                        }
-                    }
-                }
-            }
-
-            // (Prepaid usage credits are fetched separately from /prepaid/credits.)
-
-            // Log what we found
-            NSLog("✅ Parsed: Session \(sessionUsage)%, Weekly \(weeklyUsage)%\(hasWeeklySonnet ? ", Weekly Sonnet \(weeklySonnetUsage)%" : "")\(hasWeeklyFable ? ", Weekly Fable \(weeklyFableUsage)%" : "")")
-
-            lastUpdated = Date()
-            usageSource = "claude.ai"
-            errorMessage = nil
-            hasFetchedData = true
-            recordSample()
-            evaluateAlerts()
-
-            // Update percentage values for progress bars
-            updatePercentages()
+            decoded = try JSONSerialization.jsonObject(with: data)
         } catch {
-            NSLog("❌ Parse error: \(error.localizedDescription)")
-            errorMessage = "Parse error"
+            NSLog("❌ Réponse illisible : \(error.localizedDescription)")
+            self.errorMessage = "Parse error"
+            return
+        }
+        guard let payload = decoded as? [String: Any] else {
+            self.errorMessage = "Invalid JSON"
+            return
+        }
+
+        readSessionAndWeekly(payload)
+        readWeeklySonnet(payload["seven_day_sonnet"] as? [String: Any])
+        readWeeklyFable(payload["limits"] as? [[String: Any]] ?? [])
+        NSLog("✅ Relevé : session \(sessionUsage) %, semaine \(weeklyUsage) %, Sonnet \(hasWeeklySonnet ? weeklySonnetUsage : -1) %, Fable \(hasWeeklyFable ? weeklyFableUsage : -1) %")
+
+        commitFreshReading()
+    }
+
+    private func commitFreshReading() {
+        lastUpdated = .now
+        usageSource = Self.claudeSourceName
+        self.errorMessage = nil
+        self.hasFetchedData = true
+        recordSample()
+        evaluateAlerts()
+        self.updatePercentages()
+    }
+
+    private func readSessionAndWeekly(_ payload: [String: Any]) {
+        if let node = payload["five_hour"] as? [String: Any] {
+            let reading = WindowReading.standard(node, label: "Session")
+            if let percent = reading.percent { (sessionUsage, sessionLimit) = (percent, Self.fullScale) }
+            sessionResetsAt = reading.resetDate ?? sessionResetsAt
+        }
+        if let node = payload["seven_day"] as? [String: Any] {
+            let reading = WindowReading.standard(node, label: "Weekly")
+            if let percent = reading.percent { (weeklyUsage, weeklyLimit) = (percent, Self.fullScale) }
+            weeklyResetsAt = reading.resetDate ?? weeklyResetsAt
         }
     }
 
-    func updateStatusBar() {
-        let sessionPercent = Int((Double(sessionUsage) / Double(sessionLimit)) * 100)
+    /// Réservé à certains forfaits : sans nœud, la barre disparaît.
+    private func readWeeklySonnet(_ node: [String: Any]?) {
+        hasWeeklySonnet = node != nil
+        guard let node else { return }
+        let reading = WindowReading.standard(node, label: "Weekly Sonnet")
+        if let percent = reading.percent { (weeklySonnetUsage, weeklySonnetLimit) = (percent, Self.fullScale) }
+        weeklySonnetResetsAt = reading.resetDate ?? weeklySonnetResetsAt
+    }
 
-        refreshMenuBar()
+    /// Fable n'a pas de clé propre : c'est une limite hebdomadaire par modèle dans `limits`.
+    private func readWeeklyFable(_ limits: [[String: Any]]) {
+        let fableEntry = limits.first { entry in
+            let model = (entry["scope"] as? [String: Any])?["model"] as? [String: Any]
+            return model?["display_name"] as? String == "Fable"
+        }
+        hasWeeklyFable = fableEntry != nil
+        guard let fableEntry else { return }
+        let reading = WindowReading.fable(fableEntry)
+        weeklyFableUsage = reading.percent ?? weeklyFableUsage
+        weeklyFableLimit = Self.fullScale
+        weeklyFableResetsAt = reading.resetDate ?? weeklyFableResetsAt
+    }
 
-        // Check for notification thresholds
-        checkNotificationThresholds(percentage: sessionPercent)
+    func updateStatusBar() { refreshMenuBar(); checkNotificationThresholds(percentage: sessionPercentOfLimit) }
+
+    private var sessionPercentOfLimit: Int {
+        Int(Double(sessionUsage) / Double(sessionLimit) * 100)
     }
 
     /// Redessine l'icône et le titre sans toucher aux notifications (appelé aussi chaque minute pour le décompte).
     func refreshMenuBar() {
-        let bar = MenuBarDisplay.state(mode: menuBarMode,
-                                       sessionPercent: sessionUsage, sessionResetsAt: sessionResetsAt,
-                                       weeklyPercent: weeklyUsage, weeklyResetsAt: weeklyResetsAt,
-                                       showReset: menuBarShowReset, showText: menuBarShowText)
+        let display = MenuBarDisplay.state(mode: menuBarMode,
+                                           sessionPercent: sessionUsage, sessionResetsAt: sessionResetsAt,
+                                           weeklyPercent: weeklyUsage, weeklyResetsAt: weeklyResetsAt,
+                                           showReset: menuBarShowReset, showText: menuBarShowText)
         let icon = menuBarIcon()
-        delegate?.updateStatusIcon(percentage: bar.percent, title: bar.title, image: icon.image, tone: icon.tone)
+        delegate?.updateStatusIcon(percentage: display.percent, title: display.title, image: icon.image, tone: icon.tone)
     }
 
     func checkNotificationThresholds(percentage: Int) {
-        NSLog("🔔 Checking notifications: percentage=\(percentage)%, enabled=\(usageNotificationsEnabled), lastNotified=\(lastNotifiedThreshold)%")
+        NSLog("🔔 Seuils : \(percentage) %, alertes \(usageNotificationsEnabled ? "actives" : "coupées"), dernier seuil notifié \(lastNotifiedThreshold) %")
+        guard usageNotificationsEnabled else { return }
 
-        guard usageNotificationsEnabled else {
-            NSLog("⚠️ Usage notifications disabled")
-            return
+        for step in Self.notificationSteps where percentage >= step && lastNotifiedThreshold < step {
+            sendNotification(percentage: percentage, threshold: step)
+            rememberNotifiedThreshold(step)
         }
 
-        let thresholds = [25, 50, 75, 90]
+        guard percentage < lastNotifiedThreshold else { return }
+        let reachedStep = Self.notificationSteps.last { $0 <= percentage } ?? 0
+        NSLog("🔄 Seuil notifié ramené de \(lastNotifiedThreshold) % à \(reachedStep) %")
+        rememberNotifiedThreshold(reachedStep)
+    }
 
-        for threshold in thresholds {
-            if percentage >= threshold && lastNotifiedThreshold < threshold {
-                NSLog("📬 Sending notification for \(threshold)% threshold")
-                sendNotification(percentage: percentage, threshold: threshold)
-                lastNotifiedThreshold = threshold
-                // Persist the threshold
-                UserDefaults.standard.set(lastNotifiedThreshold, forKey: "last_notified_threshold")
-                UserDefaults.standard.synchronize()
-            }
-        }
-
-        // Reset if usage drops below current threshold
-        if percentage < lastNotifiedThreshold {
-            let newThreshold = thresholds.filter { $0 <= percentage }.last ?? 0
-            NSLog("🔄 Resetting notification threshold from \(lastNotifiedThreshold)% to \(newThreshold)%")
-            lastNotifiedThreshold = newThreshold
-            UserDefaults.standard.set(lastNotifiedThreshold, forKey: "last_notified_threshold")
-            UserDefaults.standard.synchronize()
-        }
+    private func rememberNotifiedThreshold(_ threshold: Int) {
+        self.lastNotifiedThreshold = threshold
+        let defaults = UserDefaults.standard
+        defaults.set(threshold, forKey: Self.thresholdDefaultsKey)
+        defaults.synchronize()
     }
 
     func sendNotification(percentage: Int, threshold: Int) {
-        Notifier.send(title: "Session Claude à \(percentage) %",
-                      body: "Tu as consommé \(percentage) % de ta session de 5 h.",
-                      id: "threshold-\(threshold)")
-        NSLog("📬 Sent notification for \(threshold)% threshold")
+        let title = "Session Claude à \(percentage) %"
+        let body = "Tu as consommé \(percentage) % de ta session de 5 h."
+        Notifier.send(title: title, body: body, id: "threshold-\(threshold)")
+        NSLog("📬 Alerte envoyée pour le seuil de \(threshold) %")
     }
 
-    func sendTestNotification() {
-        NSLog("🔔 Test notification button clicked")
+    func sendTestNotification() { postTestNotification() }
 
+    private func postTestNotification() {
         Notifier.send(title: "Notification de test", body: "Les alertes de \(Brand.name) fonctionnent.")
-        NSLog("📬 Test notification sent successfully")
+        NSLog("📬 Alerte de test envoyée")
     }
 
-    func updatePercentages() {
-        sessionPercentage = Double(sessionUsage) / Double(sessionLimit)
-        weeklyPercentage = Double(weeklyUsage) / Double(weeklyLimit)
-        weeklySonnetPercentage = Double(weeklySonnetUsage) / Double(weeklySonnetLimit)
-        weeklyFablePercentage = Double(weeklyFableUsage) / Double(weeklyFableLimit)
+    func updatePercentages() { recomputeProgressRatios() }
+
+    private func recomputeProgressRatios() {
+        let readings = [(sessionUsage, sessionLimit), (weeklyUsage, weeklyLimit),
+                        (weeklySonnetUsage, weeklySonnetLimit), (weeklyFableUsage, weeklyFableLimit)]
+            .map { Double($0.0) / Double($0.1) }
+        (sessionPercentage, weeklyPercentage, weeklySonnetPercentage, weeklyFablePercentage)
+            = (readings[0], readings[1], readings[2], readings[3])
     }
 }
