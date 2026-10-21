@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-/// Synchro mobile : à chaque relevé (une fois par minute), si elle est activée, le Mac chiffre un snapshot et l'envoie au relais.
+/// Synchro mobile : à chaque relevé (toutes les 5 minutes), si elle est activée, le Mac chiffre un snapshot et l'envoie au relais.
 /// Le relais ne voit jamais que du texte chiffré ; la clé ne quitte le Mac que par le code d'association que tu scannes toi-même.
 extension UsageManager {
     /// Identifiant du coffre et clé de chiffrement du téléphone.
@@ -74,7 +74,10 @@ extension UsageManager {
 
     func sendMobileSnapshotIfEnabled(now: Date, force: Bool = false) {
         guard mobileSyncEnabled, !isProbeRun, !mobileUploadInFlight else { return }
-        if !force, let last = lastMobileUpload, now.timeIntervalSince(last) < 55 { return }
+        let fingerprint = "\(sessionUsage)-\(weeklyUsage)"
+        let allowed = MobileSyncPolicy.shouldSend(now: now, lastSent: lastMobileUpload, changed: fingerprint != lastMobileFingerprint,
+                                                  sentToday: mobileSentToday(now: now), force: force)
+        guard allowed else { return }
         guard mobileRelay != nil else {
             DispatchQueue.main.async { self.mobileStatus = "Renseigne l'adresse du relais." }
             return
@@ -84,6 +87,8 @@ extension UsageManager {
             return
         }
         lastMobileUpload = now
+        lastMobileFingerprint = fingerprint
+        countMobileSend(now: now)
         mobileUploadInFlight = true
         MobileUploader.upload(upload.request, bytes: upload.bytes) { [weak self] outcome in
             DispatchQueue.main.async { [weak self] in
@@ -93,6 +98,18 @@ extension UsageManager {
                 if outcome.ok { manager.mobileLastSuccess = Date() }
             }
         }
+    }
+
+    private func mobileSentToday(now: Date) -> Int {
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: "mobile_sent_day") == MobileSyncPolicy.utcDayStamp(now) else { return 0 }
+        return defaults.integer(forKey: "mobile_sent_count")
+    }
+
+    private func countMobileSend(now: Date) {
+        let defaults = UserDefaults.standard
+        defaults.set(mobileSentToday(now: now) + 1, forKey: "mobile_sent_count")
+        defaults.set(MobileSyncPolicy.utcDayStamp(now), forKey: "mobile_sent_day")
     }
 
     /// Active ou désactive la synchro. À la désactivation, rien n'est supprimé sur le relais (les données y expirent au bout de 30 jours).

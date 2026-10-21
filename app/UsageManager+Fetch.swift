@@ -14,7 +14,7 @@ extension UsageManager {
         if organizations.isEmpty { fetchOrganizations() }
 
         if sessionCookie.isEmpty {
-            if !statuslineApplied { showOnMain(error: "Session cookie not set") }
+            if !statuslineApplied && !DevFlags.isSet("--demo") { showOnMain(error: "Session cookie not set") }
             return
         }
 

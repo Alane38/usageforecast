@@ -50,7 +50,7 @@ Les cookies restent sur ton Mac : dans le trousseau macOS pour les versions publ
 
 ## Application mobile
 
-Active la synchro dans les réglages, déploie ton propre relais Cloudflare (gratuit, `scripts/deploy-relay.mjs`), puis scanne le code d'association. Tout est chiffré (AES-256-GCM) sur ton Mac avant l'envoi : le relais ne voit que du texte chiffré, la clé ne passe que par le code d'association. Détails : [mobile/README.md](mobile/README.md) et [docs/adr/002-application-mobile.md](docs/adr/002-application-mobile.md).
+Active la synchro dans les réglages, déploie ton propre relais Cloudflare (offre gratuite suffisante : environ 300 écritures par jour pour 1 000 autorisées, `scripts/deploy-relay.mjs`), puis scanne le code d'association. Tout est chiffré (AES-256-GCM) sur ton Mac avant l'envoi : le relais ne voit que du texte chiffré, la clé ne passe que par le code d'association. Détails : [mobile/README.md](mobile/README.md) et [docs/adr/002-application-mobile.md](docs/adr/002-application-mobile.md).
 
 ## Compiler
 

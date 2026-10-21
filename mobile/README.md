@@ -6,7 +6,7 @@ Surveille ton usage de Claude depuis ton téléphone : jauges de session et de s
  Mac (UsageForecast)                Relais (Cloudflare Worker)              Téléphone (PWA)
  ───────────────────                 ──────────────────────────              ───────────────
  snapshot JSON  ──chiffré AES-256──▶  coffre <id> : texte illisible  ──────▶  déchiffre avec la clé
- (1 envoi / minute)                   (30 jours, jamais lu)                    affiche, garde en cache
+ (1 envoi / 5 min)                   (30 jours, jamais lu)                    affiche, garde en cache
         ▲                                                                           │
         └──── la clé ne voyage que dans le code QR que tu scannes toi-même ─────────┘
 ```

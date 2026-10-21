@@ -750,4 +750,17 @@ check(StatuslineUsage.loadNewest(paths: [fileDir.appendingPathComponent("absent.
 try? FileManager.default.removeItem(at: fileDir)
 
 
+
+// Cadence de la synchro mobile : jamais plus de 288 envois par jour en régime normal, plafond à 800.
+let syncT0 = Date(timeIntervalSince1970: 1_000_000)
+check(MobileSyncPolicy.shouldSend(now: syncT0, lastSent: nil, changed: false, sentToday: 0, force: false), "synchro : premier envoi immédiat")
+check(!MobileSyncPolicy.shouldSend(now: syncT0.addingTimeInterval(60), lastSent: syncT0, changed: true, sentToday: 1, force: false), "synchro : pas d'envoi avant 5 minutes")
+check(MobileSyncPolicy.shouldSend(now: syncT0.addingTimeInterval(300), lastSent: syncT0, changed: true, sentToday: 1, force: false), "synchro : envoi après 5 minutes si changement")
+check(!MobileSyncPolicy.shouldSend(now: syncT0.addingTimeInterval(600), lastSent: syncT0, changed: false, sentToday: 1, force: false), "synchro : rien si les valeurs n'ont pas bougé")
+check(MobileSyncPolicy.shouldSend(now: syncT0.addingTimeInterval(1200), lastSent: syncT0, changed: false, sentToday: 1, force: false), "synchro : envoi de présence après 20 minutes")
+check(MobileSyncPolicy.shouldSend(now: syncT0.addingTimeInterval(5), lastSent: syncT0, changed: false, sentToday: 1, force: true), "synchro : envoi manuel immédiat")
+check(!MobileSyncPolicy.shouldSend(now: syncT0.addingTimeInterval(9999), lastSent: syncT0, changed: true, sentToday: 800, force: true), "synchro : le plafond quotidien bloque même l'envoi manuel")
+check(MobileSyncPolicy.dailyCap + 0 < 1000 && Int(86_400 / MobileSyncPolicy.minInterval) < 1000, "synchro : sous la limite gratuite de 1 000 écritures")
+check(MobileSyncPolicy.utcDayStamp(Date(timeIntervalSince1970: 86_399)) != MobileSyncPolicy.utcDayStamp(Date(timeIntervalSince1970: 86_400)), "synchro : le compteur change à minuit UTC")
+
 exit(failures == 0 ? 0 : 1)

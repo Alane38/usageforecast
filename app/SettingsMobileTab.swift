@@ -38,7 +38,7 @@ struct MobileTab: View {
                     Link("Comment créer le relais", destination: URL(string: "https://github.com/Alane38/usageforecast/tree/main/mobile")!)
                         .font(.caption)
                 }
-                Text("Un petit service à toi (Cloudflare Worker, gratuit) qui ne garde que du texte chiffré pendant 30 jours.")
+                Text("Un petit service à toi (Cloudflare Worker, offre gratuite suffisante : environ 300 envois par jour pour 1 000 autorisés) qui ne garde que du texte chiffré pendant 30 jours.")
                     .font(.caption).foregroundColor(.secondary)
                 // En texte brut : sans cela macOS colore l'adresse comme un lien et on la prend pour une valeur saisie.
                 Text(verbatim: "Elle ressemble à : https://usageforecast-relay.ton-compte.workers.dev")

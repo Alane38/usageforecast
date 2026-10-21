@@ -2,6 +2,12 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.14.2 : 21 octobre 2026
+
+### Corrigé
+- **Synchro mobile : limite gratuite de Cloudflare dépassée.** Un envoi par minute faisait 1 440 écritures par jour pour 1 000 autorisées : le relais refusait tout après environ 16 h 40 jusqu'à minuit UTC. Désormais au plus un envoi toutes les 5 minutes (288 par jour), rien si les valeurs n'ont pas changé (envoi de présence toutes les 20 minutes), envoi immédiat sur demande, et plafond de sécurité de 800 par jour.
+- Rouvrir l'application (Applications, Spotlight) ouvre sa fenêtre, même si l'icône de la barre de menu est masquée.
+
 ## 1.14.1 : 20 octobre 2026
 
 ### Ajouté
