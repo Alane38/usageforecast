@@ -57,6 +57,20 @@ enum UsageAnalytics {
         }
     }
 
+    /// Comme `usedToday`, mais dans la fenêtre en cours : après une remise à zéro (nouvelle semaine) on repart de zéro,
+    /// car ce qui a été consommé avant appartient à la fenêtre précédente. C'est ce que le budget du jour doit comparer.
+    static func usedTodayInCurrentWindow(_ samples: [UsageSample], series: UsageSeries, now: Date = AppClock.now,
+                                         calendar: Calendar = .current) -> Double? {
+        let midnight = calendar.startOfDay(for: now)
+        let today = points(samples, series: series).filter { $0.time >= midnight && $0.time <= now }
+        guard today.count >= 2 else { return nil }
+        return zip(today, today.dropFirst()).reduce(0.0) { total, pair in
+            let delta = pair.1.percent - pair.0.percent
+            if -delta > resetDropThreshold { return 0 }
+            return delta > 0 ? total + delta : total
+        }
+    }
+
     /// Vrai quand le tracé doit être interrompu entre deux relevés : remise à zéro, ou trou de données (app fermée,
     /// Mac en veille). Relier ces points dessinerait une pente qui n'a jamais existé.
     static func breaksLine(from previous: (time: Date, percent: Double), to next: (time: Date, percent: Double),

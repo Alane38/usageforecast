@@ -66,7 +66,7 @@ extension UsageManager {
     var weeklyRecentRate: Double? {
         UsageAnalytics.recentRate(historySamples, series: .weekly, lookback: 24 * 3600, minElapsed: 12 * 3600)
     }
-    var weeklyUsedToday: Double? { usedTodayOverride ?? UsageAnalytics.usedToday(historySamples, series: .weekly) }
+    var weeklyUsedToday: Double? { usedTodayOverride ?? UsageAnalytics.usedTodayInCurrentWindow(historySamples, series: .weekly) }
     var dayBudget: DayBudget? {
         DayBudget.make(weeklyUsed: Double(weeklyUsage), usedToday: weeklyUsedToday, now: AppClock.now, resetsAt: weeklyResetsAt)
     }

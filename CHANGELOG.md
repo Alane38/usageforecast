@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.14.3 : 21 octobre 2026
+
+### Corrigé
+- **Budget du jour faux le jour d'un reset hebdomadaire** : la consommation d'avant le reset (fin de l'ancienne semaine) était comptée dans « Aujourd'hui », d'où « 17 % sur 13 % conseillés, dépassé » alors que 6 % seulement avaient été consommés dans la nouvelle semaine. La consommation du jour repart maintenant de zéro à la remise à zéro.
+
 ## 1.14.2 : 21 octobre 2026
 
 ### Corrigé

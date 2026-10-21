@@ -763,4 +763,9 @@ check(!MobileSyncPolicy.shouldSend(now: syncT0.addingTimeInterval(9999), lastSen
 check(MobileSyncPolicy.dailyCap + 0 < 1000 && Int(86_400 / MobileSyncPolicy.minInterval) < 1000, "synchro : sous la limite gratuite de 1 000 écritures")
 check(MobileSyncPolicy.utcDayStamp(Date(timeIntervalSince1970: 86_399)) != MobileSyncPolicy.utcDayStamp(Date(timeIntervalSince1970: 86_400)), "synchro : le compteur change à minuit UTC")
 
+
+// Jour de remise à zéro de la semaine : seule la consommation après le reset compte (bug vu le 21/10 : 17 % au lieu de 6 %).
+let resetDay = [daySample(0, w: 84), daySample(2, w: 99), daySample(4, w: 1), daySample(6, w: 6)]
+check(UsageAnalytics.usedTodayInCurrentWindow(resetDay, series: .weekly, now: midnightBase.addingTimeInterval(7 * 3600), calendar: utc) == 5, "aujourd'hui : un reset en cours de journée repart de zéro")
+
 exit(failures == 0 ? 0 : 1)
