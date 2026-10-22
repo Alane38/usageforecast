@@ -52,13 +52,22 @@ struct WeekPlanDisclosure: View {
         max((total - CGFloat(count) * 2) * CGFloat(percent / 100), 2)
     }
 
+    /// Un bloc étroit garde sa valeur en plus petit : sans elle, la fin de semaine (jour partiel) paraît vide.
+    private func blockText(_ text: String, width: CGFloat) -> some View {
+        Text(text).font(.system(size: width >= 34 ? 11 : 9.5, weight: .medium)).foregroundColor(.primary)
+            .lineLimit(1).fixedSize().frame(width: width)
+    }
+
     private func block(width: CGFloat, text: String, color: Color) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(color)
-            if width >= 34 { Text(text).font(.system(size: 11, weight: .medium)).foregroundColor(.primary) }
+            if width >= Self.narrowestLabeled { blockText(text, width: width) }
         }
         .frame(width: width)
     }
+
+    /// En dessous, même une valeur de deux chiffres ne tient plus.
+    private static let narrowestLabeled: CGFloat = 20
 
     /// Bloc d'un jour. Celui d'aujourd'hui se remplit de ce qui est consommé et passe au rouge quand il est dépassé.
     @ViewBuilder
@@ -69,10 +78,9 @@ struct WeekPlanDisclosure: View {
                 RoundedRectangle(cornerRadius: 4).fill(budget.tone.color.opacity(0.22))
                 RoundedRectangle(cornerRadius: 4).fill(budget.tone.color.opacity(0.6)).frame(width: max(width * fraction, consumed > 0 ? 3 : 0))
                 if width >= 56 {
-                    Text("\(Int(consumed.rounded())) / \(Int(segment.percent.rounded())) %")
-                        .font(.system(size: 11, weight: .medium)).foregroundColor(.primary).frame(width: width)
-                } else if width >= 34 {
-                    Text("\(Int(consumed.rounded())) %").font(.system(size: 11, weight: .medium)).foregroundColor(.primary).frame(width: width)
+                    blockText("\(Int(consumed.rounded())) / \(Int(segment.percent.rounded())) %", width: width)
+                } else if width >= Self.narrowestLabeled {
+                    blockText("\(Int(consumed.rounded())) %", width: width)
                 }
             }
             .frame(width: width)

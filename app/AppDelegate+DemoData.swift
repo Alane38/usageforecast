@@ -23,7 +23,7 @@ extension AppDelegate {
         usageManager.sessionUsage = DevFlags.integer("--session") ?? 8
         usageManager.weeklyUsage = DevFlags.integer("--weekly") ?? 37
         usageManager.sessionResetsAt = AppClock.now.addingTimeInterval(sessionLeft)
-        usageManager.weeklyResetsAt = AppClock.now.addingTimeInterval(2 * 86400 + 14 * 3600)
+        usageManager.weeklyResetsAt = AppClock.now.addingTimeInterval(DevFlags.number("--weekly-left") ?? (2 * 86400 + 14 * 3600))
         usageManager.lastUpdated = AppClock.now
         usageManager.hasFetchedData = true
     }

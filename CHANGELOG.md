@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.18.4 : 22 octobre 2026
+
+### Corrigé
+- **Planning de la semaine : les petits blocs affichent leur valeur.** Le bloc « avant auj. » et le dernier jour (partiel, souvent 8 % de la barre) restaient vides parce qu'ils étaient trop étroits pour le texte. Ils affichent maintenant leur pourcentage en plus petit, en gardant les proportions exactes. Nouvelle scène de contrôle visuel « fin de semaine ».
+
 ## 1.18.3 : 22 octobre 2026
 
 ### Corrigé
