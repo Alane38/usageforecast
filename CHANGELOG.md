@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.14.4 : 22 octobre 2026
+
+### Ajouté
+- **Application mobile : bouton soleil/lune dans l'en-tête** pour passer du sombre au clair en un geste (le sombre reste le thème par défaut ; le choix est mémorisé). Publié en redéployant le relais : aucune mise à jour de l'APK nécessaire.
+
 ## 1.14.3 : 21 octobre 2026
 
 ### Corrigé

@@ -19,6 +19,7 @@ let timer = null;
 const root = document.getElementById("app");
 const syncChip = document.getElementById("sync");
 const refreshButton = document.getElementById("refresh");
+const themeButton = document.getElementById("theme");
 const nav = document.getElementById("nav");
 
 function loadCached() {
@@ -39,7 +40,20 @@ function applyTheme() {
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", light ? "#f3f3f5" : "#101012");   // barre d'état du navigateur
 }
 
+/** Vrai si l'affichage est clair en ce moment (choix « clair », ou « auto » avec un téléphone en mode clair). */
+function isLightNow() {
+  const theme = state.prefs.theme;
+  return theme === "light" || (theme === "auto" && matchMedia("(prefers-color-scheme: light)").matches);
+}
+
+function renderThemeButton() {
+  const light = isLightNow();
+  themeButton.replaceChildren(icon(light ? "moon" : "sun"));
+  themeButton.setAttribute("aria-label", light ? "Passer au thème sombre" : "Passer au thème clair");
+}
+
 function renderChrome() {
+  renderThemeButton();
   const paired = Boolean(state.pairing);
   nav.hidden = !paired;
   refreshButton.hidden = !paired;
@@ -168,6 +182,7 @@ function start() {
     window.scrollTo(0, 0);
   });
   refreshButton.addEventListener("click", refresh);
+  themeButton.addEventListener("click", () => setTheme(isLightNow() ? "dark" : "light"));
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { render(); refresh(); } else clearTimeout(timer); });
   window.addEventListener("online", refresh);
   window.addEventListener("beforeinstallprompt", (event) => { event.preventDefault(); installEvent = event; state.installable = true; render(); });
