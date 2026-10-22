@@ -125,7 +125,6 @@ class UsageManager: ObservableObject {
     @Published var mobileStatus = ""
     @Published var mobileLastSuccess: Date? = nil
     var lastMobileUpload: Date? = nil
-    var lastMobileFingerprint: String? = nil
     var mobileUploadInFlight = false
     /// Démonstrations et essais uniquement : remplace l'identifiant et la clé réels.
     var mobilePairingOverride: MobilePairing? = nil

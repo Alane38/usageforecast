@@ -2,6 +2,12 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.17.3 : 22 octobre 2026
+
+### Corrigé
+- **« Données anciennes » à tort sur le téléphone** : depuis la 1.14.2, le Mac n'envoyait rien quand les pourcentages n'avaient pas bougé (présence toutes les 20 minutes), alors que le téléphone juge une donnée périmée après 10 minutes. Le Mac envoie maintenant toutes les 5 minutes, valeurs identiques ou non (288 écritures par jour pour 1 000 autorisées).
+- **Application mobile déjà installée** : les consignes d'installation n'apparaissent plus dans les Réglages quand l'application tourne installée (PWA autonome ou APK).
+
 ## 1.17.2 : 22 octobre 2026
 
 ### Ajouté

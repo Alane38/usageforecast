@@ -28,6 +28,10 @@ async function copyPairingLink(event, pairing) {
   setTimeout(() => { button.textContent = "Copier le lien d'association"; }, 4000);
 }
 
+/** Déjà installée (PWA en mode autonome) ou dans l'APK : les consignes d'installation ne servent à rien. */
+const alreadyInstalled = () =>
+  globalThis.matchMedia?.("(display-mode: standalone)").matches === true || globalThis.navigator?.standalone === true || Boolean(globalThis.UsageForecastNative);
+
 export function settingsView(state, actions) {
   const { snapshot, pairing, prefs, checkedAt, now, status, message } = state;
   const themes = [["dark", "Sombre"], ["light", "Clair"], ["auto", "Auto"]];
@@ -51,9 +55,10 @@ export function settingsView(state, actions) {
       h("div", { class: "seg", role: "group", "aria-label": "Thème" },
         themes.map(([value, label]) => h("button", { "aria-pressed": String(prefs.theme === value), onclick: () => actions.setTheme(value) }, label)))),
     h("section", { class: "card" },
-      h("h2", null, "Application"),
-      state.installable ? h("button", { class: "btn primary", onclick: actions.install }, "Installer sur l'écran d'accueil")
-        : h("p", { class: "muted" }, "Pour l'installer : menu ⋮ du navigateur (Chrome, Firefox…), puis « Installer » ou « Ajouter à l'écran d'accueil »."),
+      h("h2", null, alreadyInstalled() ? "Confidentialité" : "Application"),
+      alreadyInstalled() ? null
+        : state.installable ? h("button", { class: "btn primary", onclick: actions.install }, "Installer sur l'écran d'accueil")
+          : h("p", { class: "muted" }, "Pour l'installer : menu ⋮ du navigateur (Chrome, Firefox…), puis « Installer » ou « Ajouter à l'écran d'accueil »."),
       h("p", { class: "muted" }, "Les données sont chiffrées de bout en bout : le relais ne voit jamais ton usage, seule la clé de ce téléphone les déchiffre.")),
     nativeCard(),
     h("section", { class: "card" },

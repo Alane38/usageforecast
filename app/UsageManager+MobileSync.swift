@@ -81,8 +81,7 @@ extension UsageManager {
 
     func sendMobileSnapshotIfEnabled(now: Date, force: Bool = false) {
         guard mobileSyncEnabled, !isProbeRun, !mobileUploadInFlight else { return }
-        let fingerprint = "\(sessionUsage)-\(weeklyUsage)"
-        let allowed = MobileSyncPolicy.shouldSend(now: now, lastSent: lastMobileUpload, changed: fingerprint != lastMobileFingerprint,
+        let allowed = MobileSyncPolicy.shouldSend(now: now, lastSent: lastMobileUpload,
                                                   sentToday: mobileSentToday(now: now), force: force)
         guard allowed else { return }
         guard mobileRelay != nil else {
@@ -94,7 +93,6 @@ extension UsageManager {
             return
         }
         lastMobileUpload = now
-        lastMobileFingerprint = fingerprint
         countMobileSend(now: now)
         mobileUploadInFlight = true
         MobileUploader.upload(upload.request, bytes: upload.bytes) { [weak self] outcome in
