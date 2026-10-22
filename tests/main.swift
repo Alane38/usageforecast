@@ -259,8 +259,9 @@ func sample(_ minutes: Double, s: Double? = nil, w: Double? = nil) -> UsageSampl
 let rising = (0...20).map { sample(Double($0), s: 10 + Double($0) * 0.3) }
 let rate = UsageAnalytics.recentRate(rising, series: .session, now: at(20))
 check(abs((rate ?? 0) - 18) < 0.01, "rythme : 6 points en 20 min = 18 %/h")
-check(UsageAnalytics.recentRate(Array(rising.prefix(4)), series: .session, now: at(3)) == nil, "rythme : moins de 5 minutes -> nil")
-check(UsageAnalytics.recentRate((0...10).map { sample(Double($0), s: 40) }, series: .session, now: at(10)) == 0, "rythme : usage immobile -> 0")
+check(UsageAnalytics.recentRate(Array(rising.prefix(11)), series: .session, now: at(10)) == nil, "rythme : moins de 15 minutes -> nil")
+check(UsageAnalytics.recentRate([sample(0, s: 0), sample(2, s: 1), sample(5, s: 2)], series: .session, now: at(5)) == nil, "rythme : 2 points en 5 minutes juste après un reset -> pas de rythme")
+check(UsageAnalytics.recentRate((0...20).map { sample(Double($0), s: 40) }, series: .session, now: at(20)) == 0, "rythme : usage immobile -> 0")
 let withReset = [sample(0, s: 90), sample(5, s: 95), sample(10, s: 98), sample(15, s: 2), sample(20, s: 4), sample(25, s: 6), sample(30, s: 8)]
 check(abs((UsageAnalytics.recentRate(withReset, series: .session, now: at(30)) ?? 0) - 24) < 0.01, "rythme : seul le temps après le reset compte")
 check(UsageAnalytics.recentRate([sample(0, w: 5), sample(10, w: 9)], series: .session, now: at(10)) == nil, "rythme : série absente -> nil")

@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.16.1 : 22 octobre 2026
+
+### Corrigé
+- **Fausse alerte juste après un reset de session** : 2 points en 5 minutes donnaient « Rythme récent : 24 %/h · 100 % vers 14 h 30 » et une alerte « à ce rythme » alors que la session était à 2 %. Le rythme de session demande maintenant 15 minutes d'observation après un reset (le pourcentage est un entier, une si courte fenêtre ne dit rien).
+
 ## 1.16.0 : 22 octobre 2026
 
 ### Ajouté
