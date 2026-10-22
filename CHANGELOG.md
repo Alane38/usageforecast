@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.17.2 : 22 octobre 2026
+
+### Ajouté
+- **Application mobile : « Copier le lien d'association »** (Réglages, carte « Associer un autre appareil ») : retrouve le lien complet depuis un téléphone déjà associé, par exemple pour l'APK Android, sans repasser par le Mac. Le lien contient la clé : à ne partager avec personne.
+
 ## 1.17.1 : 22 octobre 2026
 
 ### Ajouté

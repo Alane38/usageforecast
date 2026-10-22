@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { b64urlToBytes, bytesToB64url, decryptBlob, decryptJson, parsePairing } from "../lib/crypto.js";
+import { b64urlToBytes, bytesToB64url, decryptBlob, decryptJson, pairingLink, parsePairing } from "../lib/crypto.js";
 import { ID, KEY, KEY_BYTES, encrypt } from "./helpers.js";
 
 // Vecteur produit par app/MobileCrypto.swift (clé 0x00…0x1f, nonce 0xa0…0xab) : l'app Mac et le téléphone doivent s'entendre.
@@ -63,5 +63,13 @@ describe("lien d'appairage", () => {
     expect(parsePairing(`v1.${ID}.AAAA`)).toBeNull();
     expect(parsePairing("https://usage.example.workers.dev/")).toBeNull();
     expect(parsePairing(undefined)).toBeNull();
+  });
+});
+
+describe("pairingLink", () => {
+  test("le lien reconstruit est relu à l'identique par parsePairing", () => {
+    const link = pairingLink({ id: ID, key: KEY }, "https://exemple.workers.dev");
+    expect(link).toBe(`https://exemple.workers.dev/#v1.${ID}.${KEY}`);
+    expect(parsePairing(link)).toEqual({ id: ID, key: KEY });
   });
 });

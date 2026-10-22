@@ -1,6 +1,7 @@
 // Écran Réglages : l'état de la synchro, le thème, l'installation et l'oubli de l'appareil.
 import { h } from "../dom.js";
 import { age, clock } from "../../lib/format.js";
+import { pairingLink } from "../../lib/crypto.js";
 
 const field = (key, value) => h("div", { class: "field" }, h("span", { class: "k" }, key), h("span", { class: "v" }, value));
 
@@ -13,6 +14,18 @@ function nativeCard() {
     h("p", { class: "muted" }, `Version ${native.version()}. Mises à jour, adresse du relais et lien d'association (nécessaire au widget).`),
     h("button", { class: "btn primary", onclick: () => native.openUpdates() }, "Mises à jour"),
     h("button", { class: "btn", onclick: () => native.openSettings() }, "Adresse du relais et widget"));
+}
+
+/** Copie le lien d'association de cet appareil (pour en associer un autre, par exemple l'APK Android). */
+async function copyPairingLink(event, pairing) {
+  const button = event.currentTarget;
+  try {
+    await navigator.clipboard.writeText(pairingLink(pairing, location.origin));
+    button.textContent = "Lien copié";
+  } catch {
+    button.textContent = "Copie impossible : autorise le presse-papiers";
+  }
+  setTimeout(() => { button.textContent = "Copier le lien d'association"; }, 4000);
 }
 
 export function settingsView(state, actions) {
@@ -29,6 +42,10 @@ export function settingsView(state, actions) {
       snapshot ? field("Version du Mac", snapshot.appVersion || "inconnue") : null,
       field("Appareil", pairing ? `…${pairing.id.slice(-6)}` : "non associé"),
       h("button", { class: "btn", onclick: actions.refresh }, "Actualiser maintenant")),
+    pairing ? h("section", { class: "card" },
+      h("h2", null, "Associer un autre appareil"),
+      h("p", { class: "muted" }, "Copie le lien d'association de ce téléphone pour le coller dans l'application Android. Il contient la clé de déchiffrement : ne le partage avec personne."),
+      h("button", { class: "btn", onclick: (event) => copyPairingLink(event, pairing) }, "Copier le lien d'association")) : null,
     h("section", { class: "card" },
       h("h2", null, "Apparence"),
       h("div", { class: "seg", role: "group", "aria-label": "Thème" },

@@ -27,6 +27,11 @@ export function parsePairing(input) {
   return key && key.length === 32 ? { id: parts[1], key: parts[2] } : null;
 }
 
+/** Lien d'association complet, tel que l'affiche le Mac : à coller dans l'application Android ou à scanner. Contient la clé. */
+export function pairingLink(pairing, origin) {
+  return `${origin}/#v1.${pairing.id}.${pairing.key}`;
+}
+
 /** Nul au moindre problème (mauvaise clé, donnée modifiée, format invalide) : on ne distingue pas les causes. */
 export async function decryptBlob(blob, keyB64url) {
   const combined = b64urlToBytes(blob);
