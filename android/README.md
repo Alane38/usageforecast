@@ -49,6 +49,10 @@ Réglages (appui long sur Retour ou sur l'icône), puis **Mises à jour**. Un ba
 3. Elle la confie à `PackageInstaller`. La première fois, Android demande d'autoriser cette application à installer des mises à jour (« sources inconnues ») ; ensuite il ne reste qu'une confirmation.
 4. Android refuse de lui-même toute version signée avec une autre clé : voir la section suivante.
 
+### Si le widget n'avance pas (Xiaomi, Samsung, etc.)
+
+Le widget se rafraîchit : au système toutes les 30 minutes, par une tâche de fond toutes les 15 minutes, à l'ouverture de l'application et à l'appui sur « ↻ actualiser ». Les surcouches de batterie suspendent souvent les tâches de fond d'une application inactive. Sur Xiaomi : Paramètres, Applications, UsageForecast, **Économiseur de batterie : Aucune restriction**, et **Démarrage automatique** activé ; épingler l'application dans les applications récentes aide aussi. Après une mise à jour de l'APK, appuie une fois sur « ↻ actualiser ».
+
 ## Signature et mises à jour
 
 L'APK est signé avec la **clé de debug Android** (`~/.android/debug.keystore`, ou `UF_KEYSTORE`). C'est suffisant pour une installation hors Play Store. Android n'accepte une mise à jour que si la signature est **identique** : l'APK se construit donc toujours sur la machine du mainteneur, avec la même clé. Avec une autre clé, il faut désinstaller d'abord (le stockage de la PWA est perdu : réassocier ensuite).

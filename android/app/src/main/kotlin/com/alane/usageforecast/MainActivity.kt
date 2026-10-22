@@ -106,6 +106,9 @@ class MainActivity : Activity() {
         super.onResume()
         updateBanner?.hide()
         updateBanner?.checkIfDue()
+        // Le widget se met à jour dès qu'on ouvre l'application, sans attendre la prochaine tâche de fond.
+        WidgetScheduler.ensureScheduled(this)
+        WidgetRefresher.runAsync(this)
         webView?.onResume()
     }
 

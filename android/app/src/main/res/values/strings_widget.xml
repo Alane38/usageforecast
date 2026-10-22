@@ -20,4 +20,5 @@
     <string name="widget_illisible">Données illisibles : colle à nouveau le lien d\'association.</string>
 
     <string name="setup_widget_aide">Pour le widget d\'écran d\'accueil, colle le lien d\'association complet (https://…/#v1.…) : la clé est alors rangée, chiffrée, dans le Keystore Android.</string>
+    <string name="widget_actualiser">↻ actualiser</string>
 </resources>

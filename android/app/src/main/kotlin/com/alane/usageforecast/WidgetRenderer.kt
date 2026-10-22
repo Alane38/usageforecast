@@ -63,6 +63,8 @@ object WidgetRenderer {
     private fun build(context: Context, layout: Int, state: State): RemoteViews {
         val views = RemoteViews(context.packageName, layout)
         views.setOnClickPendingIntent(R.id.widget_root, openApp(context, state))
+        // Le pied (« il y a 3 min · … ») actualise sans ouvrir l'application.
+        views.setOnClickPendingIntent(R.id.widget_footer, refreshIntent(context))
         when (state) {
             is State.Message -> {
                 views.setViewVisibility(R.id.widget_gauges, View.GONE)
@@ -124,6 +126,7 @@ object WidgetRenderer {
         state.snapshot.dayBudget?.let {
             parts += context.getString(R.string.widget_budget, Math.round(it.used), Math.round(it.allowed))
         }
+        parts += context.getString(R.string.widget_actualiser)
         return parts.joinToString(" · ")
     }
 
@@ -135,6 +138,11 @@ object WidgetRenderer {
             Tone.STALE -> R.color.texte_discret
         },
     )
+
+    private fun refreshIntent(context: Context): PendingIntent {
+        val intent = Intent(context, UsageWidgetProvider::class.java).setAction(UsageWidgetProvider.ACTION_REFRESH)
+        return PendingIntent.getBroadcast(context, 1, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
 
     /** Sans clé, le toucher mène directement à l'écran où coller le lien ; sinon, à l'application. */
     private fun openApp(context: Context, state: State): PendingIntent {

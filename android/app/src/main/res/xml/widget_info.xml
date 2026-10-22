@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mise à jour par JobScheduler (WidgetScheduler), pas par la période système : 0 la désactive. -->
+<!-- Deux déclencheurs : JobScheduler (WidgetScheduler, 15 min) et la période du système (30 min, le minimum), qui survit à une mise à jour de l'APK. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_description"
     android:initialLayout="@layout/widget_large"
@@ -12,5 +12,5 @@
     android:resizeMode="horizontal|vertical"
     android:targetCellHeight="1"
     android:targetCellWidth="2"
-    android:updatePeriodMillis="0"
+    android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />

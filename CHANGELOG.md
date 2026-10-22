@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.18.5 : 23 octobre 2026
+
+### Corrigé
+- **Android : le widget ne se mettait pas à jour.** Sa seule mécanique était une tâche `JobScheduler`, que les surcouches de batterie (Xiaomi, etc.) suspendent et qu'une mise à jour de l'APK efface. Trois déclencheurs de plus : la période du système (30 minutes, qui survit à une mise à jour), **l'ouverture de l'application** (le widget se rafraîchit aussitôt), et **un appui sur le pied du widget** (« ↻ actualiser »), qui actualise sans ouvrir l'application.
+
 ## 1.18.4 : 22 octobre 2026
 
 ### Corrigé
