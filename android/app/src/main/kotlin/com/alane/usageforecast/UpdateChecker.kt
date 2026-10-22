@@ -13,11 +13,11 @@ object UpdateChecker {
 
     fun check(currentVersion: String): Outcome {
         val body = try {
-            fetchText(UpdatePolicy.RELEASES_API, maxBytes = 512 * 1024)
+            fetchText(UpdatePolicy.RELEASES_API, maxBytes = 1024 * 1024)
         } catch (error: java.io.IOException) {
             return Outcome.Failed("GitHub est injoignable. Vérifie ta connexion.")
         }
-        val release = UpdatePolicy.parseRelease(body) ?: return Outcome.UpToDate
+        val release = UpdatePolicy.parseReleases(body) ?: return Outcome.UpToDate
         return if (UpdatePolicy.isNewer(release.version, currentVersion)) Outcome.Available(release) else Outcome.UpToDate
     }
 

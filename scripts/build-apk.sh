@@ -7,9 +7,10 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-PLIST=app/Info.plist
-VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")
-BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$PLIST")
+# L'APK a sa propre version (android/version.properties) : une correction Android ne change pas celle de l'application Mac.
+VERSION=$(sed -n 's/^versionName=//p' android/version.properties)
+BUILD=$(sed -n 's/^versionCode=//p' android/version.properties)
+[ -n "$VERSION" ] && [ -n "$BUILD" ] || { echo "android/version.properties illisible" >&2; exit 1; }
 
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 SIGNING_STORE="${UF_KEYSTORE:-$HOME/.android/debug.keystore}"

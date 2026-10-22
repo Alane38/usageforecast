@@ -121,11 +121,11 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       <button role="tab" aria-selected="false" data-pane="p5">Android</button>
     </div>
     <div class="term on" id="p1"><div class="line" id="p1c" tabindex="0">curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh</div><button class="ico" type="button" data-copy="p1c" aria-label="Copier la commande"><svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></button></div>
-    <div class="term plain" id="p5"><div class="line">Application Android (APK), connectée à ton relais chiffré. <a href="#android">Voir comment</a>.</div><a class="btn primary apk-link" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger l'APK</a></div>
-    <div class="mobile-only"><span id="mobile-text">Tu es sur ton téléphone ? Envoie-toi le lien pour l'installer depuis ton Mac.</span><br><button class="copy" type="button" id="share">Envoyer le lien à mon Mac</button><a class="btn primary apk-link" id="apk-mobile" href="https://github.com/Alane38/usageforecast/releases/latest" hidden>Télécharger l'APK Android</a></div>
+    <div class="term plain" id="p5"><div class="line">Application Android (APK), connectée à ton relais chiffré. <a href="#android">Voir comment</a>.</div><a class="btn primary apk-link" href="https://github.com/Alane38/usageforecast/releases">Télécharger l'APK</a></div>
+    <div class="mobile-only"><span id="mobile-text">Tu es sur ton téléphone ? Envoie-toi le lien pour l'installer depuis ton Mac.</span><br><button class="copy" type="button" id="share">Envoyer le lien à mon Mac</button><a class="btn primary apk-link" id="apk-mobile" href="https://github.com/Alane38/usageforecast/releases" hidden>Télécharger l'APK Android</a></div>
   </div>
   <div class="cta">
-    <a class="btn primary" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger pour Mac</a>
+    <a class="btn primary mac-link" href="https://github.com/Alane38/usageforecast/releases">Télécharger pour Mac</a>
     <a class="btn" href="https://github.com/Alane38/usageforecast">Voir le code</a>
   </div>
   <ul class="trust">
@@ -197,7 +197,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     </ul>
     <p class="note" style="margin-top:14px"><strong>Installer en 3 étapes.</strong> 1. Télécharge l'APK. 2. Autorise ton navigateur à installer des applications quand Android le demande. 3. Colle le lien d'association affiché par UsageForecast sur ton Mac (Réglages, Mobile).</p>
     <div class="mini">
-      <a class="btn primary apk-link" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger l'APK</a>
+      <a class="btn primary apk-link" href="https://github.com/Alane38/usageforecast/releases">Télécharger l'APK</a>
       <a class="btn" href="https://github.com/Alane38/usageforecast/blob/main/android/README.md">Guide d'installation</a>
     </div>
     <p class="apk-meta" id="apk-meta">APK pour Android 8 et plus</p>
@@ -242,7 +242,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   <h2>Garde un œil sur ta limite, sans y penser</h2>
   <p class="sub" style="margin-inline:auto">Une commande, et ta barre de menu te dit où tu en es et où tu vas.</p>
   <div class="install"><div class="term on" id="p4"><div class="line" id="p4c" tabindex="0">curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh</div><button class="ico" type="button" data-copy="p4c" aria-label="Copier la commande"><svg class="cp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></svg><svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7"/></svg></button></div></div>
-  <div class="cta"><a class="btn primary" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger pour Mac</a><a class="btn" href="https://github.com/Alane38/usageforecast">Mettre une étoile sur GitHub</a></div>
+  <div class="cta"><a class="btn primary mac-link" href="https://github.com/Alane38/usageforecast/releases">Télécharger pour Mac</a><a class="btn" href="https://github.com/Alane38/usageforecast">Mettre une étoile sur GitHub</a></div>
 </div></section>
 </main>
 
@@ -275,13 +275,23 @@ if(/Android/i.test(navigator.userAgent)){
   document.getElementById('share').hidden=true;
   document.getElementById('apk-mobile').hidden=false;
 }
-fetch('https://api.github.com/repos/Alane38/usageforecast/releases/latest').then(function(r){return r.ok?r.json():null}).then(function(d){
-  if(!d||!d.assets)return;
-  var apk=d.assets.filter(function(a){return /-android\.apk$/.test(a.name)})[0];
+/* Deux séries de releases : « vX.Y.Z » (application Mac) et « android-vX.Y.Z » (APK). Chaque bouton lit la sienne. */
+fetch('https://api.github.com/repos/Alane38/usageforecast/releases?per_page=30').then(function(r){return r.ok?r.json():null}).then(function(list){
+  if(!Array.isArray(list))return;
+  var published=list.filter(function(d){return !d.draft&&!d.prerelease});
+  var mac=published.filter(function(d){return /^v\d+\.\d+\.\d+$/.test(d.tag_name)})[0];
+  if(mac)document.querySelectorAll('.mac-link').forEach(function(a){a.href=mac.html_url});
+  var apkRelease=null,apk=null;
+  published.some(function(d){
+    var found=(d.assets||[]).filter(function(a){return /-android\.apk$/.test(a.name)})[0];
+    if(found){apkRelease=d;apk=found;return true}
+    return false;
+  });
   if(!apk)return;
   document.querySelectorAll('.apk-link').forEach(function(a){a.href=apk.browser_download_url});
+  var version=apk.name.replace(/^UsageForecast-/,'').replace(/-android\.apk$/,'');
   var mb=(apk.size/1048576).toFixed(1).replace('.',',');
-  document.getElementById('apk-meta').textContent=d.tag_name.replace(/^v/,'UsageForecast ')+' · '+mb+' Mo · Android 8 et plus';
+  document.getElementById('apk-meta').textContent='UsageForecast Android '+version+' · '+mb+' Mo · Android 8 et plus';
 }).catch(function(){});
 fetch('https://api.github.com/repos/Alane38/usageforecast').then(function(r){return r.ok?r.json():null}).then(function(d){
   if(d&&typeof d.stargazers_count==='number'&&d.stargazers_count>0)document.getElementById('stars').textContent='★ '+d.stargazers_count;

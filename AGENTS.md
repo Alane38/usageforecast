@@ -33,6 +33,11 @@ utilisent une **horloge figée** (`AppClock`) : le rendu est identique tous les 
   alerte, peu de données, vide, hors ligne. Un seul cas « normal » ne suffit pas.
 - **Zéro avertissement** de compilation ; tout changement de logique a son test ; un outil de vérification se vérifie lui-même (contrôle négatif).
 - **Flux de livraison** : bump, section du `CHANGELOG.md`, `test.sh`, `release.sh`, installation (`trash` l'ancienne app puis `ditto`), commit, `git tag -a vX.Y.Z -m`, push.
+- **Trois canaux de livraison, jamais mélangés** (sinon l'application Mac propose une mise à jour pour un simple correctif du téléphone) :
+  - **Application Mac** : `scripts/bump-version.sh X.Y.Z`, tag `vX.Y.Z`, workflow `release.yml` (zip + SHA-256). Seule cette série compte pour le Mac et pour `docs/install.sh`.
+  - **APK Android** : `scripts/bump-android.sh X.Y.Z` (version dans `android/version.properties`, indépendante du Mac), commit et push, puis `scripts/release-android.sh` : release `android-vX.Y.Z`. L'APK ne lit que cette série.
+  - **Application mobile (PWA)** : `cd mobile && bun scripts/deploy-relay.mjs`. **Aucune release, aucun numéro de version.**
+  - Les deux séries se lisent dans la **liste** des releases GitHub, jamais via `releases/latest`.
 - **Trousseau** : une demande de mot de passe par mise à jour (un seul élément `secret_bundle`). **Après une installation, ne lancer aucun autre processus qui lit
   le trousseau** (diagnostic, capture) avant que l'utilisateur ait validé : chaque processus redemande.
 - **Secrets** : jamais dans le dépôt, les journaux ni les captures. La synchro mobile est **désactivée par défaut** ; le relais ne voit que du texte chiffré.

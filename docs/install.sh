@@ -46,8 +46,9 @@ work=$(mktemp -d)
 trap 'mv "$work" "$HOME/.Trash/usageforecast-install-$$" 2>/dev/null || true' EXIT
 
 say "Recherche de la dernière version…"
-api=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest") || die "GitHub est injoignable."
-tag=$(printf '%s' "$api" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -1)
+# La liste, pas « latest » : l'APK Android a ses propres releases (android-vX.Y.Z), qui ne doivent pas être prises pour l'application Mac.
+api=$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=30") || die "GitHub est injoignable."
+tag=$(printf '%s' "$api" | grep -oE '"tag_name": *"v[0-9]+\.[0-9]+\.[0-9]+"' | head -1 | sed 's/.*"\(v[^"]*\)"/\1/')
 [ -n "$tag" ] || die "Aucune release trouvée."
 version=${tag#v}
 zip="UsageForecast-$version-arm64.zip"

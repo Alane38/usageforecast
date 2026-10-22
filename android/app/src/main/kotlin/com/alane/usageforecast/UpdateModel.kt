@@ -1,5 +1,6 @@
 package com.alane.usageforecast
 
+import org.json.JSONArray
 import org.json.JSONObject
 
 /** Une release GitHub exploitable : l'APK, son fichier d'empreinte et la page de la version. */
@@ -11,7 +12,9 @@ data class ReleaseInfo(val version: String, val apkUrl: String, val checksumUrl:
  * mise à jour dont la signature diffère de l'application installée, ce qui est la garantie finale.
  */
 object UpdatePolicy {
-    const val RELEASES_API = "https://api.github.com/repos/Alane38/usageforecast/releases/latest"
+    /** La liste, pas « latest » : l'application Mac a ses propres releases (`vX.Y.Z`), qui ne doivent pas masquer celles de l'APK. */
+    const val RELEASES_API = "https://api.github.com/repos/Alane38/usageforecast/releases?per_page=20"
+    const val TAG_PREFIX = "android-v"
     private const val TRUSTED_HOST = "github.com"
     private const val TRUSTED_PATH = "/Alane38/usageforecast/releases/download/"
     const val MAX_APK_BYTES = 60L * 1024 * 1024
@@ -44,12 +47,19 @@ object UpdatePolicy {
         return if (token.length == 64 && token.all { it in '0'..'9' || it in 'a'..'f' }) token else null
     }
 
-    /** Lit la réponse de `releases/latest` ; null pour un brouillon, une préversion ou une release sans APK vérifiable. */
-    fun parseRelease(json: String): ReleaseInfo? {
-        val root = runCatching { JSONObject(json) }.getOrNull() ?: return null
+    /** La plus récente des releases Android (`android-vX.Y.Z`) de la liste ; null si aucune n'est exploitable. */
+    fun parseReleases(json: String): ReleaseInfo? {
+        val array = runCatching { JSONArray(json) }.getOrNull() ?: return null
+        val releases = (0 until array.length()).mapNotNull { array.optJSONObject(it)?.let(::parseRelease) }
+        return releases.reduceOrNull { best, next -> if (isNewer(next.version, best.version)) next else best }
+    }
+
+    /** Une release `android-vX.Y.Z` avec son APK et son empreinte ; null pour un brouillon, une préversion, un autre tag ou un fichier manquant. */
+    fun parseRelease(root: JSONObject): ReleaseInfo? {
         if (root.optBoolean("draft") || root.optBoolean("prerelease")) return null
         val tag = root.optString("tag_name")
-        val version = parseVersion(tag)?.joinToString(".") ?: return null
+        if (!tag.startsWith(TAG_PREFIX)) return null
+        val version = parseVersion(tag.removePrefix(TAG_PREFIX))?.joinToString(".") ?: return null
         val assets = root.optJSONArray("assets") ?: return null
         val urls = (0 until assets.length()).mapNotNull { index ->
             val asset = assets.optJSONObject(index) ?: return@mapNotNull null

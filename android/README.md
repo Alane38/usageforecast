@@ -22,6 +22,16 @@ Pour l'activer, colle le **lien d'association complet** (`https://<relais>/#v1.<
 
 **Fonctionnement** : un `JobScheduler` périodique (15 min, réseau requis, sans dépendance tierce) fait un seul `GET <relais>/v1/<id>` (https, délais de 8 s, 256 Ko maximum, pas de redirection ; le corps n'est pas relu si `x-updated-at` n'a pas changé). Le téléphone n'écrit jamais sur le relais : le quota d'écriture quotidien ne concerne que le Mac. La tâche est reprogrammée à l'ouverture de l'application, à l'ajout du widget et après un redémarrage (le lanceur rappelle alors le widget) : **`RECEIVE_BOOT_COMPLETED` n'est donc pas demandée**, la permission reste `INTERNET` seule. Limite : Android peut espacer les tâches périodiques (économie d'énergie), l'âge affiché dit toujours la vérité.
 
+## Versions et publication
+
+L'APK a **sa propre version** (`android/version.properties`), indépendante de celle de l'application Mac : un correctif Android ne déclenche aucune mise à jour sur le Mac.
+
+```bash
+./scripts/bump-android.sh 1.19.1     # change la version de l'APK
+git commit -am "Android 1.19.1" && git push
+./scripts/release-android.sh         # construit, teste, publie la release android-v1.19.1
+```
+
 ## Construire
 
 Prérequis : JDK 17, SDK Android dans `~/Library/Android/sdk` (plateforme 35, build-tools 35) avec les licences déjà acceptées par toi.
@@ -44,7 +54,7 @@ Ou télécharger l'APK depuis la page des releases du dépôt, l'ouvrir sur le t
 
 Réglages (appui long sur Retour ou sur l'icône), puis **Mises à jour**. Un bandeau en bas de l'écran signale aussi une nouvelle version (une recherche par jour au plus).
 
-1. L'application lit `releases/latest` du dépôt GitHub et ne retient que les fichiers `UsageForecast-X.Y.Z-android.apk` et `.apk.sha256` de ce dépôt, en https (`UpdatePolicy`, testé).
+1. L'application lit la **liste** des releases du dépôt GitHub et ne retient que la série `android-vX.Y.Z` (l'application Mac a ses propres tags `vX.Y.Z`, qui ne la concernent pas), puis seulement les fichiers `UsageForecast-X.Y.Z-android.apk` et `.apk.sha256` de ce dépôt, en https (`UpdatePolicy`, testé).
 2. Elle télécharge l'APK (60 Mo au plus), **vérifie son SHA-256**, puis contrôle que l'archive est bien `com.alane.usageforecast`.
 3. Elle la confie à `PackageInstaller`. La première fois, Android demande d'autoriser cette application à installer des mises à jour (« sources inconnues ») ; ensuite il ne reste qu'une confirmation.
 4. Android refuse de lui-même toute version signée avec une autre clé : voir la section suivante.

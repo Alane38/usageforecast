@@ -1,6 +1,6 @@
 import Foundation
 
-/// Dernière version publiée sur GitHub (`releases/latest`) : seule la logique pure, sans réseau.
+/// Dernière version de l'application Mac publiée sur GitHub : seule la logique pure, sans réseau.
 struct ReleaseInfo: Equatable {
     let version: String
     let pageURL: URL
@@ -10,15 +10,30 @@ struct ReleaseInfo: Equatable {
 }
 
 enum UpdateChecker {
-    static let latestReleaseURL = URL(string: "https://api.github.com/repos/Alane38/usageforecast/releases/latest")!
+    /// La liste des releases, pas « latest » : l'APK Android a sa propre série de tags (`android-vX.Y.Z`) et une release Android
+    /// récente ne doit ni masquer une mise à jour du Mac, ni en annoncer une.
+    static let releasesURL = URL(string: "https://api.github.com/repos/Alane38/usageforecast/releases?per_page=30")!
     /// Une vérification toutes les 6 h suffit : les versions sortent au plus quelques fois par jour.
     static let interval: TimeInterval = 3600
 
-    /// Lit `tag_name` (« v1.8.1 ») et `html_url` ; nil si la réponse n'est pas une release (404, brouillon, JSON inattendu).
+    /// La plus récente des releases du Mac dans la liste de GitHub ; nil si aucune n'est exploitable.
+    static func parseList(_ data: Data) -> ReleaseInfo? {
+        guard let array = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] else { return nil }
+        let releases = array.compactMap(parse(release:))
+        return releases.reduce(nil) { best, release in
+            guard let best else { return release }
+            return isNewer(release.version, than: best.version) ? release : best
+        }
+    }
+
+    /// Lit une release seule ; nil si la réponse n'est pas une release du Mac (404, brouillon, préversion, tag `android-v…`, JSON inattendu).
     static func parse(_ data: Data) -> ReleaseInfo? {
-        guard let object = try? JSONSerialization.jsonObject(with: data),
-              let json = object as? [String: Any],
-              let tag = json["tag_name"] as? String,
+        guard let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return nil }
+        return parse(release: json)
+    }
+
+    private static func parse(release json: [String: Any]) -> ReleaseInfo? {
+        guard let tag = json["tag_name"] as? String,
               let link = json["html_url"] as? String, let url = URL(string: link),
               url.scheme == "https", url.host == "github.com",
               json["draft"] as? Bool != true, json["prerelease"] as? Bool != true,

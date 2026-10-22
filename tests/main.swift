@@ -795,4 +795,15 @@ check(AlertRules.moment(momentSameDay, now: momentNoon, calendar: paris) == "18 
 check(AlertRules.moment(momentTomorrow, now: momentNoon, calendar: paris) == "demain 9 h 05", "échéance : demain")
 check(AlertRules.moment(momentFar, now: momentNoon, calendar: paris).hasSuffix(" 13 h 47") && AlertRules.moment(momentFar, now: momentNoon, calendar: paris).hasPrefix("mar"), "échéance : un autre jour, son nom (mar. 13 h 47)")
 
+
+// Mises à jour du Mac : la série android-v… ne compte ni comme mise à jour ni comme release la plus récente.
+func releaseJSON(_ tag: String, draft: Bool = false) -> String {
+    "{\"tag_name\":\"\(tag)\",\"html_url\":\"https://github.com/Alane38/usageforecast/releases/tag/\(tag)\",\"draft\":\(draft),\"prerelease\":false,\"assets\":[]}"
+}
+let listWithAndroid = Data("[\(releaseJSON("android-v1.18.8")),\(releaseJSON("v1.18.7")),\(releaseJSON("v1.19.0", draft: true)),\(releaseJSON("v1.18.9")),\(releaseJSON("android-v9.9.9"))]".utf8)
+check(UpdateChecker.parseList(listWithAndroid)?.version == "1.18.9", "mise à jour Mac : la plus récente des releases v…, sans les android-v… ni les brouillons")
+check(UpdateChecker.parseList(Data("[\(releaseJSON("android-v1.18.8"))]".utf8)) == nil, "mise à jour Mac : une liste sans release du Mac -> rien")
+check(UpdateChecker.parse(Data(releaseJSON("android-v1.18.8").utf8)) == nil, "mise à jour Mac : un tag android-v… n'est pas une release du Mac")
+check(UpdateChecker.parseList(Data("pas du json".utf8)) == nil && UpdateChecker.parseList(Data("[]".utf8)) == nil, "mise à jour Mac : réponse vide ou illisible -> rien")
+
 exit(failures == 0 ? 0 : 1)

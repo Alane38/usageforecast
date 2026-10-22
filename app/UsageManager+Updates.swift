@@ -9,12 +9,12 @@ extension UsageManager {
         guard force || UpdateChecker.shouldCheck(lastCheck: lastUpdateCheck) else { return }
         lastUpdateCheck = Date()
         UserDefaults.standard.set(lastUpdateCheck, forKey: "last_update_check")
-        var request = URLRequest(url: UpdateChecker.latestReleaseURL)
+        var request = URLRequest(url: UpdateChecker.releasesURL)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
         request.setValue("\(Brand.name)/\(currentVersion)", forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 15
         let task = URLSession.shared.dataTask(with: request) { [weak self] data, _, _ in
-            let release = data.flatMap(UpdateChecker.parse)
+            let release = data.flatMap(UpdateChecker.parseList)
             DispatchQueue.main.async { self?.applyRelease(release, announce: !force) }
         }
         task.resume()

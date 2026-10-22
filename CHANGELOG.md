@@ -2,6 +2,12 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.19.0 : 23 octobre 2026
+
+### Modifié
+- **Trois canaux de livraison séparés.** Jusqu'ici, tout partageait un numéro et une release : un correctif de l'APK ou de l'écran mobile faisait proposer une mise à jour sur le Mac. Désormais : l'application Mac a ses tags `vX.Y.Z`, l'APK a les siens (`android-vX.Y.Z`, version dans `android/version.properties`, scripts `bump-android.sh` et `release-android.sh`), et l'application mobile web se déploie sans release. Le Mac, l'APK, le site et `install.sh` lisent la **liste** des releases et chacun ne retient que sa série (une release Android ne masque plus une mise à jour du Mac, et inversement).
+- Cette release contient **l'APK Android 1.19.0** (dernier APK publié avec le Mac) : les APK installés jusqu'à la 1.18.7, qui cherchent encore « la dernière release », s'y mettent à jour une dernière fois ; ensuite ils suivent la série `android-v…`.
+
 ## 1.18.7 : 23 octobre 2026
 
 ### Corrigé
