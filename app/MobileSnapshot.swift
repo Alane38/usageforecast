@@ -10,6 +10,15 @@ struct MobileSnapshot: Codable, Equatable {
         let level: String
     }
 
+    /// Un jour du planning de la semaine (budget conseillé en % de la limite hebdomadaire), comme le popover du Mac.
+    struct PlanDay: Codable, Equatable {
+        let label: String
+        let percent: Double
+        let today: Bool
+        /// Déjà consommé aujourd'hui, seulement pour le jour en cours.
+        let consumed: Double?
+    }
+
     /// Les crédits API tels que le popover les affiche (titre, valeur, détail, part consommée).
     struct CreditsInfo: Codable, Equatable {
         let title: String
@@ -44,6 +53,8 @@ struct MobileSnapshot: Codable, Equatable {
     let servicesOK: Bool?
     let history: [HistoryPoint]
     let daily: [DailySummary]
+    /// Planning de la semaine jusqu'au reset ; absent des envois d'avant la 1.15 (le téléphone le tolère).
+    var plan: [PlanDay]? = nil
 
     /// Dernier relevé de chaque tranche de `bucket` secondes : une courbe de 24 h tient en 288 points au lieu de 1 440.
     static func decimate(_ samples: [UsageSample], bucket: TimeInterval = 300) -> [HistoryPoint] {
@@ -56,6 +67,10 @@ struct MobileSnapshot: Codable, Equatable {
 
     static func budgetInfo(_ budget: DayBudget?) -> DayBudgetInfo? {
         budget.map { DayBudgetInfo(allowed: $0.allowed, used: $0.used, level: $0.level == .over ? "over" : ($0.level == .close ? "close" : "ok")) }
+    }
+
+    static func planInfo(_ plan: DayPlan?) -> [PlanDay]? {
+        plan?.segments.map { PlanDay(label: $0.label, percent: $0.percent, today: $0.isToday, consumed: $0.consumed) }
     }
 
     static func creditsInfo(_ summary: CreditsSummary?) -> CreditsInfo? {

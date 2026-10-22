@@ -72,3 +72,13 @@ ol.steps { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
 details.journal .btn { width: 100%; margin-top: 10px; }
 
 .confidence { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+
+/* Planning de la semaine : un jour par ligne, la barre du jour en cours se remplit de ce qui est déjà consommé. */
+.plan-row { display: grid; grid-template-columns: 40px 1fr 44px; align-items: center; gap: 10px; font-size: 14px; }
+.plan-row.today { font-weight: 650; }
+.plan-day { color: var(--ink-2); }
+.plan-row.today .plan-day { color: var(--ink); }
+.plan-bar { background: transparent; }
+.plan-track { position: absolute; left: 0; top: 0; bottom: 0; background: var(--track); border-radius: 5px; overflow: hidden; }
+.plan-track .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar-color); }
+.plan-pct { text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }

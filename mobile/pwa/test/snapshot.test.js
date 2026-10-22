@@ -10,6 +10,8 @@ describe("validation du snapshot", () => {
     expect(snapshot.weekly.pace).toBe("under");
     expect(snapshot.weekly.perDayPercent).toBe(25);
     expect(snapshot.dayBudget).toEqual({ allowed: 24, used: 17, level: "ok" });
+    expect(snapshot.plan[0]).toEqual({ label: "auj.", percent: 13, today: true, consumed: 6 });
+    expect(snapshot.plan[1].consumed).toBeNull();
     expect(snapshot.credits.value).toBe("100 $");
     expect(snapshot.history[0].t).toBe(1792400000 * 1000);
     expect(snapshot.daily[0].activeHours).toEqual([16, 17]);

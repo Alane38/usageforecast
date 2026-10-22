@@ -40,6 +40,7 @@ const snapshot = {
     usedTodayPercent: 17, line: "Prévision · session ≈ 76 % · semaine ≈ 73 % (25 %/j)",
   },
   dayBudget: { allowed: 24, used: 17, level: "ok" },
+  plan: [{ label: "auj.", percent: 24, today: true, consumed: 17 }, { label: "dem.", percent: 23, today: false }, { label: "ven", percent: 23, today: false }, { label: "sam", percent: 22, today: false }, { label: "dim", percent: 5, today: false }],
   credits: { title: "Crédits API · Max 5x", value: "100 $", detail: "Expirent dans 17 j · ≈ 5,88 $ par jour", usedFraction: 0 },
   servicesOK: true, history, daily,
 };
@@ -63,6 +64,7 @@ if (scenario === "vide") {
   snapshot.history = [];
   snapshot.credits = null;
   snapshot.dayBudget = null;
+  snapshot.plan = [];
   snapshot.forecast.session = null;
 }
 

@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.15.0 : 22 octobre 2026
+
+### Ajouté
+- **Application mobile : carte « Planning de la semaine »** sur l'accueil (budget conseillé jour par jour jusqu'au reset, le jour en cours se remplit de ce qui est déjà consommé), calculée par le Mac et envoyée dans le snapshot chiffré. Un téléphone qui reçoit un envoi plus ancien, sans planning, reste lisible. Il faut la 1.15.0 sur le Mac pour que le planning arrive.
+
 ## 1.14.4 : 22 octobre 2026
 
 ### Ajouté

@@ -768,4 +768,13 @@ check(MobileSyncPolicy.utcDayStamp(Date(timeIntervalSince1970: 86_399)) != Mobil
 let resetDay = [daySample(0, w: 84), daySample(2, w: 99), daySample(4, w: 1), daySample(6, w: 6)]
 check(UsageAnalytics.usedTodayInCurrentWindow(resetDay, series: .weekly, now: midnightBase.addingTimeInterval(7 * 3600), calendar: utc) == 5, "aujourd'hui : un reset en cours de journée repart de zéro")
 
+
+// Planning de la semaine envoyé au téléphone.
+let planSample = WeekPlan.makeFromMidnight(used: 6, usedToday: 6, now: noon, resetsAt: noon.addingTimeInterval(3 * 86_400), calendar: paris)
+let planInfo = MobileSnapshot.planInfo(planSample)
+check(planInfo?.first?.today == true && planInfo?.first?.consumed == 6 && (planInfo?.count ?? 0) >= 3 && MobileSnapshot.planInfo(nil) == nil, "mobile : planning de la semaine dans le snapshot")
+var withPlan = snapshot; withPlan.plan = planInfo
+check(withPlan.encoded().flatMap(MobileSnapshot.decode) == withPlan, "mobile : snapshot avec planning, aller-retour JSON")
+check(snapshotData.flatMap(MobileSnapshot.decode)?.plan == nil, "mobile : snapshot sans planning (ancien envoi) toujours lisible")
+
 exit(failures == 0 ? 0 : 1)

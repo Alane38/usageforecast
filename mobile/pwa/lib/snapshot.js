@@ -56,6 +56,8 @@ export function normalize(raw) {
     credits: raw.credits && typeof raw.credits.value === "string"
       ? { title: String(raw.credits.title ?? "Crédits API"), value: raw.credits.value, detail: String(raw.credits.detail ?? ""), usedFraction: isNumber(raw.credits.usedFraction) ? raw.credits.usedFraction : 0 }
       : null,
+    plan: (Array.isArray(raw.plan) ? raw.plan : []).filter((day) => typeof day.label === "string" && isNumber(day.percent))
+      .map((day) => ({ label: day.label, percent: day.percent, today: day.today === true, consumed: isNumber(day.consumed) ? day.consumed : null })),
     servicesOK: typeof raw.servicesOK === "boolean" ? raw.servicesOK : null,
     history: (Array.isArray(raw.history) ? raw.history : []).filter((point) => isNumber(point.t)).map((point) => ({ t: point.t * 1000, s: isNumber(point.s) ? point.s : null, w: isNumber(point.w) ? point.w : null })),
     daily: (Array.isArray(raw.daily) ? raw.daily : []).map(summaryOf).filter(Boolean),

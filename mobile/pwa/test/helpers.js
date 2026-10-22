@@ -43,6 +43,7 @@ export function rawSnapshot(overrides = {}) {
       line: "Prévision · session ≈ 77 %",
     },
     dayBudget: { allowed: 24, used: 17, level: "ok" },
+    plan: [{ label: "auj.", percent: 13, today: true, consumed: 6 }, { label: "dem.", percent: 14, today: false }],
     credits: { title: "Crédits API · Max 5x", value: "100 $", detail: "Expirent dans 17 j · ≈ 5,88 $ par jour", usedFraction: 0 },
     servicesOK: true,
     history: [{ t: 1792400000, s: 10, w: 50 }, { t: 1792400300, s: 12, w: 50 }],

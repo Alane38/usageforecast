@@ -48,6 +48,29 @@ function budgetCard(budget) {
     budget.level === "over" ? h("p", { class: "muted" }, "Les jours suivants auront d'autant moins.") : null);
 }
 
+function planCard(plan) {
+  if (!plan.length) return null;
+  const biggest = Math.max(...plan.map((day) => day.percent), 1);
+  const rows = plan.map((day) => {
+    const track = h("span", { class: "plan-track" });
+    if (day.today && day.consumed !== null && day.percent > 0) {
+      const fill = h("span", { class: "fill" });
+      setWidth(fill, Math.min(day.consumed / day.percent, 1) * 100);
+      track.append(fill);
+    }
+    setWidth(track, (day.percent / biggest) * 100);
+    const consumed = day.today && day.consumed !== null ? ` (${percentOf(day.consumed)} % déjà)` : "";
+    return h("div", { class: day.today ? "plan-row today" : "plan-row" },
+      h("span", { class: "plan-day" }, day.label),
+      h("div", { class: "bar plan-bar", role: "img", "aria-label": `${day.label} : ${percentOf(day.percent)} % conseillés${consumed}` }, track),
+      h("span", { class: "plan-pct" }, `${percentOf(day.percent)} %`));
+  });
+  return h("section", { class: "card tone-ok", "aria-label": "Planning de la semaine" },
+    h("h2", null, "Planning de la semaine"),
+    h("p", { class: "muted" }, "Part de la limite à ne pas dépasser chaque jour pour arriver au reset sans être bloqué."),
+    ...rows);
+}
+
 function creditsCard(credits) {
   if (!credits) return null;
   const fill = h("span", { class: "fill" });
@@ -85,6 +108,7 @@ export function homeView(state) {
     gaugeCard("Session · 5 h", snapshot.session, { now, stale, showPerDay: false }),
     gaugeCard("Semaine · 7 j", snapshot.weekly, { now, stale, showPerDay: snapshot.dayBudget === null }),
     budgetCard(snapshot.dayBudget),
+    planCard(snapshot.plan),
     creditsCard(snapshot.credits),
     historyCard(snapshot, now),
     h("section", { class: "card" },

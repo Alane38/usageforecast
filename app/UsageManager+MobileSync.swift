@@ -58,7 +58,13 @@ extension UsageManager {
             forecast: currentForecast(now: now), dayBudget: MobileSnapshot.budgetInfo(dayBudget),
             credits: MobileSnapshot.creditsInfo(creditsSummary),
             servicesOK: (services?.hasFetched ?? false) ? services?.indicator == "none" : nil,
-            history: MobileSnapshot.decimate(historySamples), daily: Array(dailySummaries.suffix(MobileSnapshot.dailyDays)))
+            history: MobileSnapshot.decimate(historySamples), daily: Array(dailySummaries.suffix(MobileSnapshot.dailyDays)),
+            plan: MobileSnapshot.planInfo(weekPlanForMobile(now: now)))
+    }
+
+    private func weekPlanForMobile(now: Date) -> DayPlan? {
+        guard let resetsAt = weeklyResetsAt, let usedToday = weeklyUsedToday else { return nil }
+        return WeekPlan.makeFromMidnight(used: Double(weeklyUsage), usedToday: usedToday, now: now, resetsAt: resetsAt)
     }
 
     /// Le snapshot chiffré et la requête d'envoi, prêts à partir ; nil si la synchro n'est pas configurée.
