@@ -179,7 +179,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
       <li>Courbe minute par minute sur 24 h</li>
       <li>Moyennes par jour, seulement avec assez de données</li>
       <li>Crédits API et dépense du mois (Max et Team)</li>
-      <li>Application Android : navigateur ou APK, synchro chiffrée</li>
+      <li>Application Android : APK avec widget et mises à jour intégrées, synchro chiffrée</li>
     </ul>
   </div>
   <img src="img/statistiques.png" alt="Statistiques par jour de la semaine">
@@ -189,12 +189,13 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   <div class="phone"><img src="img/mobile-accueil.png" alt="Application Android UsageForecast : session, semaine et budget du jour" loading="lazy"></div>
   <div>
     <h2>Ton usage aussi sur Android</h2>
-    <p class="sub" style="margin-bottom:0">Les mêmes écrans que sur le Mac, dans ta poche : jauges, prévisions, budget du jour, historique et statistiques. Tout transite chiffré par un relais que tu héberges toi-même.</p>
+    <p class="sub" style="margin-bottom:0">Les mêmes écrans que sur le Mac, dans ta poche : jauges, prévisions, budget du jour, historique et statistiques. Tout transite chiffré par un relais que tu héberges toi-même, et la clé est gardée dans le coffre sécurisé d'Android.</p>
     <ul>
-      <li>Déploie ton relais Cloudflare gratuit (une commande, voir le guide)</li>
-      <li>Sur le Mac : Réglages, Mobile, active la synchro et affiche le code</li>
-      <li>Installe l'APK, colle le lien d'association : c'est prêt</li>
+      <li>Un <strong>widget</strong> d'écran d'accueil : session et semaine, mis à jour en arrière-plan</li>
+      <li><strong>Mises à jour dans l'application</strong> : elle trouve la nouvelle version, vérifie son empreinte et l'installe</li>
+      <li>Les mêmes écrans que sur le Mac : jauges, prévisions, planning de la semaine, historique, statistiques</li>
     </ul>
+    <p class="note" style="margin-top:14px"><strong>Installer en 3 étapes.</strong> 1. Télécharge l'APK. 2. Autorise ton navigateur à installer des applications quand Android le demande. 3. Colle le lien d'association affiché par UsageForecast sur ton Mac (Réglages, Mobile).</p>
     <div class="mini">
       <a class="btn primary apk-link" href="https://github.com/Alane38/usageforecast/releases/latest">Télécharger l'APK</a>
       <a class="btn" href="https://github.com/Alane38/usageforecast/blob/main/android/README.md">Guide d'installation</a>
@@ -229,7 +230,8 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
   <h2>Questions</h2><p class="sub">Les réponses courtes.</p>
   <details><summary>C'est vraiment gratuit ?</summary><p>Oui. Le code est ouvert, sous licence MIT. Le relais mobile tient dans l'offre gratuite de Cloudflare (environ 300 écritures par jour pour 1 000 autorisées).</p></details>
   <details><summary>Ça marche sans Claude Code ?</summary><p>Oui, avec le cookie de ta session claude.ai collé dans les Réglages. L'assistant de démarrage t'explique les deux voies.</p></details>
-  <details><summary>Et sur Android ?</summary><p>Oui : l'application mobile s'installe depuis le navigateur de ton téléphone, ou en APK téléchargé dans les <a href="https://github.com/Alane38/usageforecast/releases/latest">versions</a>. Elle se connecte à ton propre relais chiffré.</p></details>
+  <details><summary>Et sur Android ?</summary><p>Oui : télécharge l'APK sur cette page. Il contient l'application, un widget d'écran d'accueil et la mise à jour intégrée (Réglages, Mises à jour). Tu peux aussi installer la version web depuis le navigateur de ton téléphone. Dans les deux cas, elle se connecte à ton propre relais chiffré.</p></details>
+  <details><summary>Comment mettre à jour l'application Android ?</summary><p>Depuis l'application : Réglages (appui long sur Retour), puis « Mises à jour ». Elle télécharge l'APK de la dernière version depuis GitHub, vérifie son empreinte SHA-256 et lance l'installation. Android demande une confirmation, et une autorisation la première fois.</p></details>
   <details><summary>Et sur Windows ou Linux ?</summary><p>Pas pour l'instant : l'app vit dans la barre de menu de macOS.</p></details>
   <details><summary>Pourquoi macOS me demande un mot de passe après une mise à jour ?</summary><p>Les versions ne sont pas notarisées par Apple : le certificat est auto-signé, donc macOS redemande l'accès au trousseau à chaque nouvelle version. Un compte développeur Apple le supprimerait.</p></details>
   <details><summary>Comment désinstaller ?</summary><p>Dans le Terminal : <code>curl -fsSL https://alane38.github.io/usageforecast/install.sh | sh -s -- --uninstall</code>. L'app va à la Corbeille et tes données restent ; ajoute <code>--purge</code> pour les mettre aussi à la Corbeille.</p></details>

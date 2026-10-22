@@ -2,6 +2,13 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.17.0 : 22 octobre 2026
+
+### Ajouté
+- **Android : mise à jour dans l'application.** Réglages, Mises à jour : l'application lit la dernière release du dépôt, télécharge l'APK, **vérifie son SHA-256**, contrôle qu'il s'agit bien d'UsageForecast, puis passe par l'installateur d'Android (autorisation « sources inconnues » la première fois). Un bandeau signale une nouvelle version, une recherche par jour au plus. Seuls les fichiers du dépôt, en https, sont acceptés.
+- **Android : widget d'écran d'accueil** (de 2x1 à 4x2) : session et semaine avec couleur de rythme, reset et âge de la donnée, mis à jour en arrière-plan (une lecture du relais toutes les 15 minutes au plus ; le téléphone n'écrit jamais). L'identifiant et la clé d'association, collés avec le lien complet, sont chiffrés par le Keystore d'Android.
+- Tests Android : 35 (versions, URL de confiance, empreinte, déchiffrement avec le vecteur partagé avec le Mac et la PWA, lecture du snapshot).
+
 ## 1.16.1 : 22 octobre 2026
 
 ### Corrigé
