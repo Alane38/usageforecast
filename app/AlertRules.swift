@@ -76,7 +76,7 @@ enum AlertRules {
             let rate = c.sessionRatePerHour.map { " (environ \(Int($0.rounded())) % par heure)" } ?? ""
             result.append(AlertMessage(
                 kind: .willExhaust, key: "exhaust-session-\(minute(resetsAt))\(imminent ? "-imminent" : "")",
-                title: imminent ? "Limite de session dans \(minutesLeft(until: eta, from: c.now)) min" : "Tu atteindras 100 % de la session vers \(clock(eta))",
+                title: imminent ? "Limite de session dans \(minutesLeft(until: eta, from: c.now)) min" : "Tu atteindras 100 % de la session vers \(moment(eta, now: c.now))",
                 body: "Si tu gardes ce rythme\(rate), tu es à \(Int(c.sessionPercent.rounded())) % maintenant et tu seras bloqué \(duration(resetsAt.timeIntervalSince(eta))), jusqu'au reset de \(clock(resetsAt)). Ralentis un peu pour tenir."))
         }
         if let eta = c.weeklyETA, let resetsAt = c.weeklyResetsAt, c.weeklyPercent >= 40, c.weeklyPercent < 100,
@@ -150,6 +150,14 @@ enum AlertRules {
         f.locale = Locale(identifier: "fr_FR")
         f.dateFormat = pattern
         return f
+    }
+
+    /// « 13 h 47 » le jour même, « demain 13 h 47 » le lendemain, sinon « mar. 13 h 47 » : une échéance à plusieurs jours sans jour est trompeuse.
+    static func moment(_ date: Date, now: Date = AppClock.now, calendar: Calendar = .current) -> String {
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: now), to: calendar.startOfDay(for: date)).day ?? 0
+        if days <= 0 { return clock(date) }
+        if days == 1 { return "demain " + clock(date) }
+        return formatter("EEE").string(from: date).replacingOccurrences(of: ".", with: "") + " " + clock(date)
     }
 
     static func clock(_ date: Date) -> String { formatter("H:mm").string(from: date).replacingOccurrences(of: ":", with: " h ") }

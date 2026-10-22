@@ -55,7 +55,7 @@ struct ForecastExport: Codable, Equatable {
         var parts: [String] = []
         if let projected = session?.projectedPercent {
             var text = "session ≈ \(Int(projected.rounded())) %"
-            if let eta = session?.exhaustsAt { text += " (100 % vers \(AlertRules.clock(eta)))" }
+            if let eta = session?.exhaustsAt { text += " (100 % vers \(AlertRules.moment(eta)))" }
             parts.append(text)
         }
         if let projected = weekly?.projectedPercent {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { tidy, age, budgetLine, ceiling, duration, recentLine, clock, countdown, dayLabel, hoursText, isStale, paceChip, percent, points, tone, weekdayIndex } from "../lib/format.js";
+import { moment, tidy, age, budgetLine, ceiling, duration, recentLine, clock, countdown, dayLabel, hoursText, isStale, paceChip, percent, points, tone, weekdayIndex } from "../lib/format.js";
 
 const MIN = 60000;
 
@@ -111,5 +111,14 @@ describe("espaces insécables", () => {
   test("les textes sans nombre ne changent pas", () => {
     expect(tidy("Session en cours")).toBe("Session en cours");
     expect(tidy("à l'instant")).toBe("à l'instant");
+  });
+});
+
+describe("moment (échéance avec son jour)", () => {
+  const now = new Date(2026, 9, 22, 12, 0).getTime();
+  test("jour même : l'heure seule, demain : « demain », plus loin : le nom du jour", () => {
+    expect(moment(new Date(2026, 9, 22, 18, 40), now)).toBe("18 h 40");
+    expect(moment(new Date(2026, 9, 23, 9, 5), now)).toBe("demain 9 h 05");
+    expect(moment(new Date(2026, 9, 27, 13, 47), now)).toBe("mar 13 h 47");
   });
 });

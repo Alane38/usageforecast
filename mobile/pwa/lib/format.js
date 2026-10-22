@@ -103,12 +103,21 @@ export function duration(seconds) {
   return `${minutes} min`;
 }
 
+/** « 13 h 47 » le jour même, « demain 13 h 47 » le lendemain, sinon « mar. 13 h 47 » : sans le jour, une échéance lointaine trompe. */
+export function moment(date, now = Date.now()) {
+  const startOf = (value) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+  const days = Math.round((startOf(date) - startOf(new Date(now))) / 86400000);
+  if (days <= 0) return clock(date);
+  if (days === 1) return `demain ${clock(date)}`;
+  return `${new Intl.DateTimeFormat("fr-FR", { weekday: "short" }).format(date).replace(".", "")} ${clock(date)}`;
+}
+
 /** « Rythme récent : 8,2 %/h · 100 % vers 18 h 40 » ; nul quand le rythme est négligeable et sans échéance. */
 export function recentLine(window) {
   const rate = window?.ratePerHour ?? 0;
   if (!window || (rate < 1 && !window.exhaustsAt)) return null;
   const text = (rate < 10 ? String(Math.round(rate * 10) / 10) : String(Math.round(rate))).replace(".", ",");
-  return `Rythme récent : ${text} %/h${window.exhaustsAt ? ` · 100 % vers ${clock(window.exhaustsAt)}` : ""}`;
+  return `Rythme récent : ${text} %/h${window.exhaustsAt ? ` · 100 % vers ${moment(window.exhaustsAt)}` : ""}`;
 }
 
 /** « Aujourd'hui : 17 % sur 24 % conseillés », avec « dépassé de N % » au-delà. */

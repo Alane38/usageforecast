@@ -40,7 +40,7 @@ enum PaceText {
         rates.maximumFractionDigits = recent.ratePerHour < 10 ? 1 : 0
         let rate = rates.string(from: NSNumber(value: recent.ratePerHour)) ?? "?"
         var line = "Rythme récent : \(rate) %/h"
-        if let eta = recent.exhaustsAt { line += " · 100 % vers \(AlertRules.clock(eta))" }
+        if let eta = recent.exhaustsAt { line += " · 100 % vers \(AlertRules.moment(eta))" }
         return line
     }
 

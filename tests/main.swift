@@ -785,4 +785,14 @@ advanced.weekHistory = MobileSnapshot.decimate([UsageSample(time: 3_600, session
 check(advanced.encoded().flatMap(MobileSnapshot.decode) == advanced, "mobile : snapshot avec modèles, extras et courbe de la semaine, aller-retour JSON")
 check(snapshotData.flatMap(MobileSnapshot.decode)?.models == nil && snapshotData.flatMap(MobileSnapshot.decode)?.weekHistory == nil, "mobile : champs avancés absents d'un ancien envoi")
 
+
+// Heure d'épuisement : le jour est indiqué dès qu'il n'est plus aujourd'hui.
+let momentNoon = paris.date(from: DateComponents(year: 2026, month: 10, day: 22, hour: 12))!
+let momentSameDay = paris.date(from: DateComponents(year: 2026, month: 10, day: 22, hour: 18, minute: 40))!
+let momentTomorrow = paris.date(from: DateComponents(year: 2026, month: 10, day: 23, hour: 9, minute: 5))!
+let momentFar = paris.date(from: DateComponents(year: 2026, month: 10, day: 27, hour: 13, minute: 47))!
+check(AlertRules.moment(momentSameDay, now: momentNoon, calendar: paris) == "18 h 40", "échéance : le jour même, l'heure seule")
+check(AlertRules.moment(momentTomorrow, now: momentNoon, calendar: paris) == "demain 9 h 05", "échéance : demain")
+check(AlertRules.moment(momentFar, now: momentNoon, calendar: paris).hasSuffix(" 13 h 47") && AlertRules.moment(momentFar, now: momentNoon, calendar: paris).hasPrefix("mar"), "échéance : un autre jour, son nom (mar. 13 h 47)")
+
 exit(failures == 0 ? 0 : 1)

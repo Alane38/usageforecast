@@ -1,5 +1,5 @@
 // Les points d'attention de l'écran d'accueil : ce qui mérite d'être lu en premier, du plus grave au moins grave.
-import { clock, countdown, age, isStale } from "./format.js";
+import { moment, countdown, age, isStale } from "./format.js";
 
 const SEVERITY = { danger: 0, warning: 1, info: 2 };
 
@@ -8,7 +8,7 @@ function windowAlerts(label, window, now, alerts) {
   const reset = window.resetsAt ? ` : reset dans ${countdown(window.resetsAt - now)}` : "";
   if (window.percent >= 100) alerts.push({ level: "danger", text: `${label} : limite atteinte${reset}` });
   else if (window.percent >= 90) alerts.push({ level: "danger", text: `${label} à ${Math.round(window.percent)} %${reset}` });
-  else if (window.exhaustsAt && window.exhaustsAt > now) alerts.push({ level: "warning", text: `${label} : à ce rythme, 100 % vers ${clock(window.exhaustsAt)}` });
+  else if (window.exhaustsAt && window.exhaustsAt > now) alerts.push({ level: "warning", text: `${label} : à ce rythme, 100 % vers ${moment(window.exhaustsAt, now)}` });
 }
 
 /** @returns {{level: "danger"|"warning"|"info", text: string}[]} */
