@@ -145,9 +145,10 @@ enum AlertRules {
     private static func minute(_ date: Date) -> Int { Int(date.timeIntervalSince1970 / 60) }
     private static func day(_ date: Date) -> Int { Int(date.timeIntervalSince1970 / 86400) }
 
-    private static func formatter(_ pattern: String) -> DateFormatter {
+    private static func formatter(_ pattern: String, timeZone: TimeZone = .current) -> DateFormatter {
         let f = DateFormatter()
         f.locale = Locale(identifier: "fr_FR")
+        f.timeZone = timeZone
         f.dateFormat = pattern
         return f
     }
@@ -155,9 +156,11 @@ enum AlertRules {
     /// « 13 h 47 » le jour même, « demain 13 h 47 » le lendemain, sinon « mar. 13 h 47 » : une échéance à plusieurs jours sans jour est trompeuse.
     static func moment(_ date: Date, now: Date = AppClock.now, calendar: Calendar = .current) -> String {
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: now), to: calendar.startOfDay(for: date)).day ?? 0
-        if days <= 0 { return clock(date) }
-        if days == 1 { return "demain " + clock(date) }
-        return formatter("EEE").string(from: date).replacingOccurrences(of: ".", with: "") + " " + clock(date)
+        let clockText = formatter("H:mm", timeZone: calendar.timeZone).string(from: date).replacingOccurrences(of: ":", with: " h ")
+        if days <= 0 { return clockText }
+        if days == 1 { return "demain " + clockText }
+        let weekday = formatter("EEE", timeZone: calendar.timeZone).string(from: date).replacingOccurrences(of: ".", with: "")
+        return weekday + " " + clockText
     }
 
     static func clock(_ date: Date) -> String { formatter("H:mm").string(from: date).replacingOccurrences(of: ":", with: " h ") }
