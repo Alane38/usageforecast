@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Session et semaine d\'UsageForecast, mises à jour en arrière-plan.</string>
+    <string name="widget_session">Session</string>
+    <string name="widget_semaine">Semaine</string>
+    <string name="widget_reset_dans">reset dans %1$s</string>
+    <string name="widget_reset_en_cours">reset en cours</string>
+    <string name="widget_age">il y a %1$s</string>
+    <string name="widget_age_maintenant">à l\'instant</string>
+    <string name="widget_age_inconnu">âge inconnu</string>
+    <string name="widget_anciennes">données anciennes</string>
+    <string name="widget_hors_ligne">hors ligne</string>
+    <string name="widget_budget">aujourd\'hui %1$d / %2$d %%</string>
+
+    <string name="widget_pas_de_relais">Configure ton relais dans l\'application pour activer le widget.</string>
+    <string name="widget_pas_de_cle">Colle le lien d\'association pour activer le widget</string>
+    <string name="widget_en_attente">Récupération des données…</string>
+    <string name="widget_rien_envoye">Ton Mac n\'a encore rien envoyé : vérifie que la synchro mobile est activée.</string>
+    <string name="widget_hors_ligne_vide">Hors ligne : aucune donnée en mémoire pour l\'instant.</string>
+    <string name="widget_illisible">Données illisibles : colle à nouveau le lien d\'association.</string>
+
+    <string name="setup_widget_aide">Pour le widget d\'écran d\'accueil, colle le lien d\'association complet (https://…/#v1.…) : la clé est alors rangée, chiffrée, dans le Keystore Android.</string>
+</resources>

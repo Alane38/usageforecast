@@ -24,6 +24,9 @@ class RelayAddress private constructor(
 ) {
     val hasPairing: Boolean get() = pairingFragment != null
 
+    /** Identifiant et clé du lien d'association, ou null (adresse seule, ou fragment qui n'en est pas un). */
+    fun pairing(): Pairing? = pairingFragment?.let { Pairing.parse(it) }
+
     /** Page de démarrage ordinaire : la PWA relit sa clé dans son propre stockage. */
     fun launchUrl(): String = "$origin/"
 

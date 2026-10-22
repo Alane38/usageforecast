@@ -9,6 +9,19 @@ Une **coque WebView** qui enveloppe la PWA de `mobile/pwa`. Pourquoi pas une TWA
 - Sécurité : permission `INTERNET` seule, aucun trafic en clair, sauvegarde Android désactivée (le stockage contient la clé), liens vers un autre domaine ouverts dans le navigateur, aucun journal.
 - Thème sombre par défaut, comme la PWA. Aucune bibliothèque tierce (WebView et framework Android seuls ; JUnit pour les tests).
 
+## Widget
+
+Un widget d'écran d'accueil (redimensionnable de 2x1 à 4x2, thème sombre) affiche la **session** et la **semaine** : pourcentage, couleur selon le rythme (vert, ambre, rouge, mêmes seuils que la PWA), « reset dans … » et l'âge de la donnée, avec « données anciennes » au-delà de 10 minutes. Toucher le widget ouvre l'application. Sans relais ou sans clé, il l'écrit (« Colle le lien d'association pour activer le widget ») ; hors ligne, il garde la dernière valeur avec son âge.
+
+Pour l'activer, colle le **lien d'association complet** (`https://<relais>/#v1.<id>.<clé>`) dans l'écran « Adresse du relais » : l'adresse seule ne suffit pas, car la coque ne voit jamais la clé de la PWA (elle vit dans le stockage de la WebView).
+
+**Ce que le widget stocke, et pourquoi**
+- `association` : l'identifiant du coffre et la clé AES-256, **chiffrés par une clé AES-GCM du Android Keystore** (non exportable : son matériel ne quitte pas le Keystore, donc une copie des préférences, une sauvegarde ou un `adb pull` ne donne que du texte inutilisable hors de l'appareil). Il faut la clé pour lire les données, et l'identifiant est lui-même un secret de lecture du relais. Jamais journalisés, jamais dans un Intent, jamais dans un `toString`.
+- `widget` : le dernier blob **chiffré** reçu du relais, son horodatage `x-updated-at` et deux indicateurs (hors ligne, coffre vide). Jamais de clair sur disque : il est déchiffré à chaque affichage.
+- « Oublier ce relais » et le changement de relais effacent ces deux stockages et la clé du Keystore, puis redessinent le widget.
+
+**Fonctionnement** : un `JobScheduler` périodique (15 min, réseau requis, sans dépendance tierce) fait un seul `GET <relais>/v1/<id>` (https, délais de 8 s, 256 Ko maximum, pas de redirection ; le corps n'est pas relu si `x-updated-at` n'a pas changé). Le téléphone n'écrit jamais sur le relais : le quota d'écriture quotidien ne concerne que le Mac. La tâche est reprogrammée à l'ouverture de l'application, à l'ajout du widget et après un redémarrage (le lanceur rappelle alors le widget) : **`RECEIVE_BOOT_COMPLETED` n'est donc pas demandée**, la permission reste `INTERNET` seule. Limite : Android peut espacer les tâches périodiques (économie d'énergie), l'âge affiché dit toujours la vérité.
+
 ## Construire
 
 Prérequis : JDK 17, SDK Android dans `~/Library/Android/sdk` (plateforme 35, build-tools 35) avec les licences déjà acceptées par toi.
