@@ -7,7 +7,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import java.util.concurrent.Executors
 
-/** Bandeau discret en bas de l'écran quand une nouvelle version existe. Une recherche par jour au plus, hors du fil principal. */
+/** Bandeau discret en bas de l'écran quand une nouvelle version existe. Une recherche à chaque ouverture (au plus toutes les 15 minutes), hors du fil principal. */
 class UpdateBanner(private val activity: Activity, private val parent: FrameLayout) {
     private val preferences = activity.getSharedPreferences("maj", Activity.MODE_PRIVATE)
     private val banner = TextView(activity).apply {
@@ -25,8 +25,8 @@ class UpdateBanner(private val activity: Activity, private val parent: FrameLayo
         parent.addView(banner, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
     }
 
-    fun checkDaily(now: Long = System.currentTimeMillis()) {
-        if (now - preferences.getLong(LAST_CHECK, 0) < ONE_DAY_MS) return
+    fun checkIfDue(now: Long = System.currentTimeMillis()) {
+        if (now - preferences.getLong(LAST_CHECK, 0) < MIN_GAP_MS) return
         val installed = runCatching { activity.packageManager.getPackageInfo(activity.packageName, 0).versionName }.getOrNull() ?: return
         Executors.newSingleThreadExecutor().execute {
             val outcome = UpdateChecker.check(installed)
@@ -42,6 +42,6 @@ class UpdateBanner(private val activity: Activity, private val parent: FrameLayo
 
     private companion object {
         const val LAST_CHECK = "derniere_recherche"
-        const val ONE_DAY_MS = 24L * 3600 * 1000
+        const val MIN_GAP_MS = 15L * 60 * 1000
     }
 }

@@ -453,7 +453,7 @@ check(UpdateChecker.parse(releaseJSON(tag: "latest")) == nil && UpdateChecker.pa
 check(UpdateChecker.isNewer("1.8.1", than: "1.8.0") && UpdateChecker.isNewer("1.10.0", than: "1.9.0") && UpdateChecker.isNewer("2.0", than: "1.99.9"), "version : plus récente")
 check(!UpdateChecker.isNewer("1.8.0", than: "1.8.0") && !UpdateChecker.isNewer("1.7.9", than: "1.8.0") && !UpdateChecker.isNewer("abc", than: "1.8.0"), "version : égale, plus ancienne ou illisible")
 check(UpdateChecker.isNewer("v1.8.1", than: "1.8.0") && !UpdateChecker.isNewer("1.8", than: "1.8.0"), "version : préfixe v et longueurs différentes")
-check(UpdateChecker.shouldCheck(lastCheck: nil) && !UpdateChecker.shouldCheck(lastCheck: Date().addingTimeInterval(-3600)) && UpdateChecker.shouldCheck(lastCheck: Date().addingTimeInterval(-7 * 3600)), "vérification : toutes les 6 h")
+check(UpdateChecker.shouldCheck(lastCheck: nil) && !UpdateChecker.shouldCheck(lastCheck: Date().addingTimeInterval(-1800)) && UpdateChecker.shouldCheck(lastCheck: Date().addingTimeInterval(-2 * 3600)), "vérification : toutes les heures")
 
 // MARK: - Budget du jour
 var paris = Calendar(identifier: .gregorian)

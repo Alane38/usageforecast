@@ -2,6 +2,13 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.18.1 : 22 octobre 2026
+
+### Ajouté
+- **Application mobile : bandeau « Nouvelle version disponible »** quand une nouvelle version de l'application est installée pendant qu'elle est ouverte (toucher pour actualiser), et vérification du serveur à chaque retour sur l'application (pas seulement au prochain lancement). 4 tests.
+- **Android (APK)** : recherche d'une nouvelle version à chaque ouverture et chaque retour (au plus toutes les 15 minutes) au lieu d'une fois par jour.
+- **Mac** : recherche d'une nouvelle version toutes les heures au lieu de toutes les 6 heures.
+
 ## 1.18.0 : 22 octobre 2026
 
 ### Ajouté

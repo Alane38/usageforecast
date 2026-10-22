@@ -1,4 +1,5 @@
 // Chef d'orchestre : appairage, synchronisation périodique, thème, installation, rendu des trois écrans.
+import { watchForNewVersion } from "../lib/update-watch.js";
 import { enablePullToRefresh } from "./pull-to-refresh.js";
 import { h, icon } from "./dom.js";
 import { parsePairing } from "../lib/crypto.js";
@@ -97,6 +98,13 @@ function render() {
   root.replaceChildren(...[notice, ...nodes].filter(Boolean));
 }
 
+function showUpdateBanner() {
+  if (document.getElementById("update-banner")) return;
+  const banner = h("button", { id: "update-banner", class: "update-banner", onclick: () => location.reload() },
+    "Nouvelle version disponible · toucher pour actualiser");
+  document.body.prepend(banner);
+}
+
 async function refresh() {
   if (!state.pairing || state.refreshing) return;
   state.refreshing = true;
@@ -193,7 +201,11 @@ function start() {
   refreshButton.append(icon("refresh"));
   render();
   refresh();
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  watchForNewVersion({
+    serviceWorker: navigator.serviceWorker,
+    onNewVersion: showUpdateBanner,
+    onVisible: (handler) => document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") handler(); }),
+  });
 }
 
 start();

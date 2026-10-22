@@ -37,7 +37,7 @@ class MainActivity : Activity() {
         root.addView(errorPanel)
         setContentView(root)
         webView = view
-        updateBanner = UpdateBanner(this, root).also { it.checkDaily() }
+        updateBanner = UpdateBanner(this, root)
 
         // Le lien d'association (avec la clé) n'est chargé qu'une fois ; ensuite, la PWA a sa clé en stockage.
         view.loadUrl(PendingPairing.take() ?: "$relayOrigin/")
@@ -105,6 +105,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         updateBanner?.hide()
+        updateBanner?.checkIfDue()
         webView?.onResume()
     }
 

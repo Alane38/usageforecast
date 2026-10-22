@@ -12,7 +12,7 @@ struct ReleaseInfo: Equatable {
 enum UpdateChecker {
     static let latestReleaseURL = URL(string: "https://api.github.com/repos/Alane38/usageforecast/releases/latest")!
     /// Une vérification toutes les 6 h suffit : les versions sortent au plus quelques fois par jour.
-    static let interval: TimeInterval = 6 * 3600
+    static let interval: TimeInterval = 3600
 
     /// Lit `tag_name` (« v1.8.1 ») et `html_url` ; nil si la réponse n'est pas une release (404, brouillon, JSON inattendu).
     static func parse(_ data: Data) -> ReleaseInfo? {
