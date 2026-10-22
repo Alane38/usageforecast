@@ -4,6 +4,17 @@ import { age, clock } from "../../lib/format.js";
 
 const field = (key, value) => h("div", { class: "field" }, h("span", { class: "k" }, key), h("span", { class: "v" }, value));
 
+/** Carte visible seulement dans l'application Android : accès aux écrans natifs sans bouton Retour. */
+function nativeCard() {
+  const native = globalThis.UsageForecastNative;
+  if (!native) return null;
+  return h("section", { class: "card" },
+    h("h2", null, "Application Android"),
+    h("p", { class: "muted" }, `Version ${native.version()}. Mises à jour, adresse du relais et lien d'association (nécessaire au widget).`),
+    h("button", { class: "btn primary", onclick: () => native.openUpdates() }, "Mises à jour"),
+    h("button", { class: "btn", onclick: () => native.openSettings() }, "Adresse du relais et widget"));
+}
+
 export function settingsView(state, actions) {
   const { snapshot, pairing, prefs, checkedAt, now, status, message } = state;
   const themes = [["dark", "Sombre"], ["light", "Clair"], ["auto", "Auto"]];
@@ -27,6 +38,7 @@ export function settingsView(state, actions) {
       state.installable ? h("button", { class: "btn primary", onclick: actions.install }, "Installer sur l'écran d'accueil")
         : h("p", { class: "muted" }, "Pour l'installer : menu ⋮ du navigateur (Chrome, Firefox…), puis « Installer » ou « Ajouter à l'écran d'accueil »."),
       h("p", { class: "muted" }, "Les données sont chiffrées de bout en bout : le relais ne voit jamais ton usage, seule la clé de ce téléphone les déchiffre.")),
+    nativeCard(),
     h("section", { class: "card" },
       h("h2", null, "Oublier cet appareil"),
       h("p", { class: "muted" }, "Efface la clé et les données de ce téléphone. Pour le réassocier, il faudra rescanner le code du Mac."),

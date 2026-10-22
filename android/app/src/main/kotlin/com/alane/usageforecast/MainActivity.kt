@@ -58,6 +58,7 @@ class MainActivity : Activity() {
             cacheMode = WebSettings.LOAD_DEFAULT
         }
         CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
+        addJavascriptInterface(NativeBridge(this@MainActivity), "UsageForecastNative")
         webViewClient = ShellWebViewClient(
             relayOrigin = relayOrigin,
             onMainFrameError = { errorPanel.show(true) },

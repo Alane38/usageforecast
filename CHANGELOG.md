@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.17.1 : 22 octobre 2026
+
+### Ajouté
+- **Android sans bouton Retour (navigation par gestes)** : l'onglet Réglages de l'application affiche une carte « Application Android » (version, **Mises à jour**, **Adresse du relais et widget**), visible seulement dans l'APK ; un second raccourci « Mises à jour » est ajouté à l'appui long sur l'icône. Passerelle `NativeBridge` limitée à l'ouverture de ces deux écrans et au numéro de version.
+
 ## 1.17.0 : 22 octobre 2026
 
 ### Ajouté

@@ -11,4 +11,14 @@
             android:targetClass="com.alane.usageforecast.SetupActivity"
             android:targetPackage="com.alane.usageforecast" />
     </shortcut>
+    <shortcut
+        android:shortcutId="mises_a_jour"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/setup_maj">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.alane.usageforecast.UpdateActivity"
+            android:targetPackage="com.alane.usageforecast" />
+    </shortcut>
 </shortcuts>
