@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.18.6 : 23 octobre 2026
+
+### Corrigé
+- **Widget Android : vrai bouton d'actualisation.** Le texte « ↻ actualiser » en bout de la ligne du bas était coupé dès que cette ligne était longue (taille moyenne ou grande). Un **bouton rond en bas à droite**, toujours visible dans les deux tailles, remplace ce texte ; le pied annonce « Actualisation… » pendant la mise à jour, et peut passer sur deux lignes dans la grande disposition pour ne plus couper le budget du jour.
+
 ## 1.18.5 : 23 octobre 2026
 
 ### Corrigé

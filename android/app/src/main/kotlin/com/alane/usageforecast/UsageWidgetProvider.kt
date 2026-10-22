@@ -24,6 +24,7 @@ class UsageWidgetProvider : AppWidgetProvider() {
 
     /** Récupération immédiate, hors du fil principal, avec le délai d'un récepteur de diffusion (goAsync). */
     private fun refreshNow(context: Context) {
+        WidgetRenderer.markRefreshing(context)
         val pending = goAsync()
         WidgetRefresher.runAsync(context) { pending.finish() }
     }

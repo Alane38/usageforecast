@@ -38,9 +38,7 @@ object WidgetRenderer {
         if (ids.isEmpty()) return
         val state = stateOf(context)
         for (id in ids) {
-            val minHeight = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-            val layout = if (minHeight in 1 until COMPACT_BELOW_DP) R.layout.widget_compact else R.layout.widget_large
-            manager.updateAppWidget(id, build(context, layout, state))
+            manager.updateAppWidget(id, build(context, layoutFor(manager, id), state))
         }
     }
 
@@ -63,8 +61,9 @@ object WidgetRenderer {
     private fun build(context: Context, layout: Int, state: State): RemoteViews {
         val views = RemoteViews(context.packageName, layout)
         views.setOnClickPendingIntent(R.id.widget_root, openApp(context, state))
-        // Le pied (« il y a 3 min · … ») actualise sans ouvrir l'application.
+        // Le bouton rond et le pied (« il y a 3 min · … ») actualisent sans ouvrir l'application.
         views.setOnClickPendingIntent(R.id.widget_footer, refreshIntent(context))
+        views.setOnClickPendingIntent(R.id.widget_refresh, refreshIntent(context))
         when (state) {
             is State.Message -> {
                 views.setViewVisibility(R.id.widget_gauges, View.GONE)
@@ -126,7 +125,6 @@ object WidgetRenderer {
         state.snapshot.dayBudget?.let {
             parts += context.getString(R.string.widget_budget, Math.round(it.used), Math.round(it.allowed))
         }
-        parts += context.getString(R.string.widget_actualiser)
         return parts.joinToString(" · ")
     }
 
@@ -138,6 +136,22 @@ object WidgetRenderer {
             Tone.STALE -> R.color.texte_discret
         },
     )
+
+    /** Retour immédiat au toucher : le pied annonce l'actualisation, sans redessiner le reste (le réseau peut prendre quelques secondes). */
+    fun markRefreshing(context: Context) {
+        val manager = AppWidgetManager.getInstance(context)
+        for (id in manager.getAppWidgetIds(ComponentName(context, UsageWidgetProvider::class.java))) {
+            val layout = layoutFor(manager, id)
+            val views = RemoteViews(context.packageName, layout)
+            views.setTextViewText(R.id.widget_footer, context.getString(R.string.widget_actualisation))
+            manager.partiallyUpdateAppWidget(id, views)
+        }
+    }
+
+    private fun layoutFor(manager: AppWidgetManager, id: Int): Int {
+        val minHeight = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+        return if (minHeight in 1 until COMPACT_BELOW_DP) R.layout.widget_compact else R.layout.widget_large
+    }
 
     private fun refreshIntent(context: Context): PendingIntent {
         val intent = Intent(context, UsageWidgetProvider::class.java).setAction(UsageWidgetProvider.ACTION_REFRESH)
