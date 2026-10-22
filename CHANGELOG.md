@@ -2,7 +2,12 @@
 
 Format : une section par version, la plus récente en haut.
 
-## 1.18.2 : 22 octobre 2026
+## 1.18.3 : 22 octobre 2026
+
+### Corrigé
+- Le formatage du jour dans les heures d'épuisement ne dépend plus du fuseau horaire de la machine (la 1.18.2 n'a pas été publiée : ses tests échouaient sur un serveur en UTC). Les tests passent maintenant sous plusieurs fuseaux.
+
+## 1.18.2 : 22 octobre 2026 (non publiée, voir 1.18.3)
 
 ### Corrigé
 - **Heure d'épuisement sans jour** : « 100 % vers 13 h 47 » pouvait désigner mardi, dans cinq jours. Le jour est maintenant indiqué dès qu'il n'est plus aujourd'hui (« demain 9 h 05 », « mar. 13 h 47 »), sur le Mac (ligne de rythme, alerte de session, export du statusline) et sur le téléphone (rythme et alertes).
