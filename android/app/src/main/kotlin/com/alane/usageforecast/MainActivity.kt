@@ -25,6 +25,7 @@ class MainActivity : Activity() {
             return
         }
         relayOrigin = origin
+        WidgetScheduler.ensureScheduled(this)
 
         val root = FrameLayout(this).apply {
             fitsSystemWindows = true

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mêmes teintes que la PWA (ok, warn, danger, stale). -->
+    <color name="widget_ok">#36D06A</color>
+    <color name="widget_warning">#FFCC00</color>
+    <color name="widget_danger">#FF5A4F</color>
+    <color name="widget_stale">#A3A3AC</color>
+    <color name="widget_fond">#F0101012</color>
+    <color name="widget_piste">#26FFFFFF</color>
+</resources>

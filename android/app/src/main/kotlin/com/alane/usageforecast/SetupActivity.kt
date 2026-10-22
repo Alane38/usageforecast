@@ -27,6 +27,7 @@ class SetupActivity : Activity() {
         val column = Ui.column(this)
         column.addView(Ui.title(this, R.string.setup_titre))
         column.addView(Ui.paragraph(this, R.string.setup_aide))
+        column.addView(Ui.paragraph(this, R.string.setup_widget_aide))
 
         input = EditText(this).apply {
             setHint(R.string.setup_indice)
@@ -77,15 +78,25 @@ class SetupActivity : Activity() {
 
     private fun accept(address: RelayAddress) {
         // Changer de relais : l'ancienne clé ne doit pas rester sur l'appareil.
-        if (currentOrigin != null && currentOrigin != address.origin) WebData.wipe()
+        if (currentOrigin != null && currentOrigin != address.origin) {
+            WebData.wipe()
+            PairingVault(this).clear()
+            WidgetStore(this).clear()
+        }
+        address.pairing()?.let { PairingVault(this).save(it) }
         store.save(address.origin)
+        WidgetScheduler.refreshSoon(this)
+        WidgetRenderer.updateAll(this)
         PendingPairing.set(if (address.hasPairing) address.pairingUrl() else null)
         restartMain()
     }
 
     private fun forgetRelay() {
         WebData.wipe()
+        PairingVault(this).clear()
+        WidgetStore(this).clear()
         store.forget()
+        WidgetRenderer.updateAll(this)
         PendingPairing.set(null)
         restartMain()
     }
