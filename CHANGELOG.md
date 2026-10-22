@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.18.0 : 22 octobre 2026
+
+### Ajouté
+- **Application mobile : tirer vers le bas pour actualiser**, comme dans un navigateur (PWA installée, navigateur et APK). Un cercle suit le doigt quand la page est tout en haut, passe à l'accent au seuil, puis l'actualisation part au relâchement. Un geste horizontal (courbes) ou un défilement normal ne le déclenchent jamais. 4 tests sur la logique.
+
 ## 1.17.3 : 22 octobre 2026
 
 ### Corrigé

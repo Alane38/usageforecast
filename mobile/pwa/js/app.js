@@ -1,4 +1,5 @@
 // Chef d'orchestre : appairage, synchronisation périodique, thème, installation, rendu des trois écrans.
+import { enablePullToRefresh } from "./pull-to-refresh.js";
 import { h, icon } from "./dom.js";
 import { parsePairing } from "../lib/crypto.js";
 import { createStore } from "../lib/store.js";
@@ -182,6 +183,7 @@ function start() {
     window.scrollTo(0, 0);
   });
   refreshButton.addEventListener("click", refresh);
+  enablePullToRefresh(refresh);
   themeButton.addEventListener("click", () => setTheme(isLightNow() ? "dark" : "light"));
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { render(); refresh(); } else clearTimeout(timer); });
   window.addEventListener("online", refresh);
