@@ -777,4 +777,13 @@ var withPlan = snapshot; withPlan.plan = planInfo
 check(withPlan.encoded().flatMap(MobileSnapshot.decode) == withPlan, "mobile : snapshot avec planning, aller-retour JSON")
 check(snapshotData.flatMap(MobileSnapshot.decode)?.plan == nil, "mobile : snapshot sans planning (ancien envoi) toujours lisible")
 
+
+// Informations avancées du snapshot : modèles, lignes supplémentaires, courbe de la semaine.
+var advanced = snapshot
+advanced.models = [MobileSnapshot.ModelShare(name: "Sonnet", percent: 12)]
+advanced.extras = [MobileSnapshot.ExtraLine(label: "Utilisation supplémentaire", text: "4 $ sur 20 $", fraction: 0.2)]
+advanced.weekHistory = MobileSnapshot.decimate([UsageSample(time: 3_600, session: 10, weekly: 20), UsageSample(time: 3_700, session: 12, weekly: 21)], bucket: 3_600)
+check(advanced.encoded().flatMap(MobileSnapshot.decode) == advanced, "mobile : snapshot avec modèles, extras et courbe de la semaine, aller-retour JSON")
+check(snapshotData.flatMap(MobileSnapshot.decode)?.models == nil && snapshotData.flatMap(MobileSnapshot.decode)?.weekHistory == nil, "mobile : champs avancés absents d'un ancien envoi")
+
 exit(failures == 0 ? 0 : 1)

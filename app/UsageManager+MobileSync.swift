@@ -59,7 +59,8 @@ extension UsageManager {
             credits: MobileSnapshot.creditsInfo(creditsSummary),
             servicesOK: (services?.hasFetched ?? false) ? services?.indicator == "none" : nil,
             history: MobileSnapshot.decimate(historySamples), daily: Array(dailySummaries.suffix(MobileSnapshot.dailyDays)),
-            plan: MobileSnapshot.planInfo(weekPlanForMobile(now: now)))
+            plan: MobileSnapshot.planInfo(weekPlanForMobile(now: now)),
+            weekHistory: mobileWeekHistory(now: now), models: mobileModels(), extras: mobileExtraLines())
     }
 
     private func weekPlanForMobile(now: Date) -> DayPlan? {

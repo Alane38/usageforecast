@@ -2,6 +2,7 @@
 import { h, icon, setLeft, setWidth } from "../dom.js";
 import { lineChart } from "../charts.js";
 import { attention } from "../../lib/attention.js";
+import { extrasCard, modelsCard, weekHistoryCard } from "./details.js";
 import { age, budgetLine, countdown, duration, isStale, paceChip, recentLine, tone } from "../../lib/format.js";
 
 const percentOf = (value) => Math.round(value);
@@ -110,7 +111,10 @@ export function homeView(state) {
     budgetCard(snapshot.dayBudget),
     planCard(snapshot.plan),
     creditsCard(snapshot.credits),
+    extrasCard(snapshot.extras),
+    modelsCard(snapshot.models),
     historyCard(snapshot, now),
+    weekHistoryCard(snapshot, now),
     h("section", { class: "card" },
       h("p", { class: "chip tone-" + (snapshot.servicesOK === false ? "warning" : "ok") }, services),
       h("p", { class: "muted" }, `Données du Mac : ${age(now - snapshot.dataAt)} · ${snapshot.source}`),

@@ -77,7 +77,10 @@ export function columnChart({ items, max, height = 96, average = null, axisForma
  * Courbe de 24 h : ligne de 2 px, lavis léger, valeur finale étiquetée sur une pastille, repère tactile.
  * points : [{ t (ms), value }] ; spanMs : durée de l'axe horizontal.
  */
-export function lineChart({ points, spanMs, now, height = 110, onCursor = () => {} }) {
+const DAY_TICKS = [[24, "−24 h"], [12, "−12 h"], [0, "maintenant"]];
+
+/** `ticks` : repères de l'axe horizontal, [heures écoulées, libellé] (24 h par défaut) ; `maxGapMs` : au-delà, la ligne est interrompue. */
+export function lineChart({ points, spanMs, now, height = 110, onCursor = () => {}, ticks = DAY_TICKS, maxGapMs = 30 * 60 * 1000, ariaLabel = "Courbe de la session sur 24 heures" }) {
   const left = 30;
   const top = 12;
   const bottom = top + height;
@@ -85,7 +88,7 @@ export function lineChart({ points, spanMs, now, height = 110, onCursor = () => 
   const max = maxValue <= 15 ? 20 : maxValue <= 40 ? 50 : 100;
   const xOf = (time) => left + (WIDTH - left - 8) * (1 - (now - time) / spanMs);
   const yOf = (value) => top + height * (1 - Math.min(Math.max(value, 0), max) / max);
-  const root = svg("svg", { class: "chart", viewBox: `0 0 ${WIDTH} ${bottom + 20}`, role: "img", "aria-label": "Courbe de la session sur 24 heures" });
+  const root = svg("svg", { class: "chart", viewBox: `0 0 ${WIDTH} ${bottom + 20}`, role: "img", "aria-label": ariaLabel });
 
   [0, max / 2, max].forEach((level) => {
     root.append(svg("line", { class: level === 0 ? "axis" : "grid", x1: left, x2: WIDTH, y1: yOf(level), y2: yOf(level) }));
@@ -95,7 +98,7 @@ export function lineChart({ points, spanMs, now, height = 110, onCursor = () => 
   const segments = [];
   points.forEach((point, index) => {
     const previous = points[index - 1];
-    const breaks = previous && (point.t - previous.t > 30 * 60 * 1000 || previous.value - point.value > 5);   // trou de données ou remise à zéro
+    const breaks = previous && (point.t - previous.t > maxGapMs || previous.value - point.value > 5);   // trou de données ou remise à zéro
     if (!previous || breaks) segments.push([]);
     segments.at(-1).push(point);
   });
@@ -134,9 +137,11 @@ export function lineChart({ points, spanMs, now, height = 110, onCursor = () => 
   hit.addEventListener("pointermove", (event) => { if (event.buttons || event.pointerType === "touch") move(event); });
   root.append(hit);
 
-  [0, 12, 24].forEach((hoursAgo) => {
+  ticks.forEach(([hoursAgo, label], index) => {
     const x = xOf(now - hoursAgo * 3600000);
-    if (x >= left - 2) root.append(svg("text", { x, y: bottom + 15, "text-anchor": hoursAgo === 24 ? "start" : hoursAgo === 0 ? "end" : "middle" }, hoursAgo === 0 ? "maintenant" : `−${hoursAgo} h`));
+    if (x < left - 2) return;
+    const anchor = hoursAgo === 0 ? "end" : index === 0 ? "start" : "middle";
+    root.append(svg("text", { x, y: bottom + 15, "text-anchor": anchor }, label));
   });
   return root;
 }

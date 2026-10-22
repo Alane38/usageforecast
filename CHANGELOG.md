@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.16.0 : 22 octobre 2026
+
+### Ajouté
+- **Application mobile : les informations avancées du popover.** Courbe de **l'historique de la semaine sur 7 jours** (un point par heure) avec « Aujourd'hui : +x % de la semaine », détail **par modèle** (Sonnet, Fable), et carte « Compte » : utilisation supplémentaire payante (dépensé sur plafond), crédits gratuits, réinitialisations de limite disponibles. Calculés par le Mac, envoyés dans le snapshot chiffré ; un envoi plus ancien reste lisible. La courbe accepte maintenant des axes et une durée d'interruption configurables.
+
 ## 1.15.0 : 22 octobre 2026
 
 ### Ajouté

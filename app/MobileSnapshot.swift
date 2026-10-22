@@ -19,6 +19,20 @@ struct MobileSnapshot: Codable, Equatable {
         let consumed: Double?
     }
 
+    /// Part de la limite hebdomadaire consommée avec un modèle (Sonnet, Fable).
+    struct ModelShare: Codable, Equatable {
+        let name: String
+        let percent: Double
+    }
+
+    /// Une ligne d'information supplémentaire du popover (utilisation payante, crédits gratuits, réinitialisations).
+    struct ExtraLine: Codable, Equatable {
+        let label: String
+        let text: String
+        /// De 0 à 1 quand la ligne a une jauge.
+        let fraction: Double?
+    }
+
     /// Les crédits API tels que le popover les affiche (titre, valeur, détail, part consommée).
     struct CreditsInfo: Codable, Equatable {
         let title: String
@@ -55,6 +69,10 @@ struct MobileSnapshot: Codable, Equatable {
     let daily: [DailySummary]
     /// Planning de la semaine jusqu'au reset ; absent des envois d'avant la 1.15 (le téléphone le tolère).
     var plan: [PlanDay]? = nil
+    /// Courbe de la semaine (un point par heure) ; absente des envois d'avant la 1.16.
+    var weekHistory: [HistoryPoint]? = nil
+    var models: [ModelShare]? = nil
+    var extras: [ExtraLine]? = nil
 
     /// Dernier relevé de chaque tranche de `bucket` secondes : une courbe de 24 h tient en 288 points au lieu de 1 440.
     static func decimate(_ samples: [UsageSample], bucket: TimeInterval = 300) -> [HistoryPoint] {

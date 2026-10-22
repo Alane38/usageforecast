@@ -12,6 +12,9 @@ describe("validation du snapshot", () => {
     expect(snapshot.dayBudget).toEqual({ allowed: 24, used: 17, level: "ok" });
     expect(snapshot.plan[0]).toEqual({ label: "auj.", percent: 13, today: true, consumed: 6 });
     expect(snapshot.plan[1].consumed).toBeNull();
+    expect(snapshot.models).toEqual([{ name: "Sonnet", percent: 12 }]);
+    expect(snapshot.extras[0].fraction).toBe(0.2);
+    expect(snapshot.weekHistory[1]).toEqual({ t: 1_760_003_600_000, w: 12 });
     expect(snapshot.credits.value).toBe("100 $");
     expect(snapshot.history[0].t).toBe(1792400000 * 1000);
     expect(snapshot.daily[0].activeHours).toEqual([16, 17]);
@@ -43,5 +46,16 @@ describe("validation du snapshot", () => {
     const snapshot = normalize(rawSnapshot({ forecast: { updatedAt: "2026-10-19T10:00:00Z", weekly: { percent: 10 } } }));
     expect(snapshot.session).toBeNull();
     expect(snapshot.weekly.percent).toBe(10);
+  });
+});
+
+describe("snapshot : champs avancés absents (envoi d'un Mac plus ancien)", () => {
+  test("restent lisibles avec des listes vides", () => {
+    const { plan, models, extras, weekHistory, ...old } = rawSnapshot();
+    const snapshot = normalize(old);
+    expect(snapshot.plan).toEqual([]);
+    expect(snapshot.models).toEqual([]);
+    expect(snapshot.extras).toEqual([]);
+    expect(snapshot.weekHistory).toEqual([]);
   });
 });

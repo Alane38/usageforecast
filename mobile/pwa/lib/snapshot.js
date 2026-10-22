@@ -58,6 +58,10 @@ export function normalize(raw) {
       : null,
     plan: (Array.isArray(raw.plan) ? raw.plan : []).filter((day) => typeof day.label === "string" && isNumber(day.percent))
       .map((day) => ({ label: day.label, percent: day.percent, today: day.today === true, consumed: isNumber(day.consumed) ? day.consumed : null })),
+    weekHistory: (Array.isArray(raw.weekHistory) ? raw.weekHistory : []).filter((point) => isNumber(point.t) && isNumber(point.w)).map((point) => ({ t: point.t * 1000, w: point.w })),
+    models: (Array.isArray(raw.models) ? raw.models : []).filter((model) => typeof model.name === "string" && isNumber(model.percent)).map((model) => ({ name: model.name, percent: model.percent })),
+    extras: (Array.isArray(raw.extras) ? raw.extras : []).filter((line) => typeof line.label === "string" && typeof line.text === "string")
+      .map((line) => ({ label: line.label, text: line.text, fraction: isNumber(line.fraction) ? line.fraction : null })),
     servicesOK: typeof raw.servicesOK === "boolean" ? raw.servicesOK : null,
     history: (Array.isArray(raw.history) ? raw.history : []).filter((point) => isNumber(point.t)).map((point) => ({ t: point.t * 1000, s: isNumber(point.s) ? point.s : null, w: isNumber(point.w) ? point.w : null })),
     daily: (Array.isArray(raw.daily) ? raw.daily : []).map(summaryOf).filter(Boolean),

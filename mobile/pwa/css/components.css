@@ -82,3 +82,5 @@ details.journal .btn { width: 100%; margin-top: 10px; }
 .plan-track { position: absolute; left: 0; top: 0; bottom: 0; background: var(--track); border-radius: 5px; overflow: hidden; }
 .plan-track .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--bar-color); }
 .plan-pct { text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.share { display: grid; gap: 6px; }
