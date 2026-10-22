@@ -50,4 +50,6 @@ android {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    // org.json n'est qu'une coquille vide dans les tests unitaires de l'SDK : la vraie implémentation sert aux tests.
+    testImplementation("org.json:json:20240303")
 }

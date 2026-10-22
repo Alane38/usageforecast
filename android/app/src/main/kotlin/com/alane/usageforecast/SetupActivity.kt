@@ -50,6 +50,9 @@ class SetupActivity : Activity() {
         column.addView(Ui.spacing(this, 16))
         column.addView(Ui.button(this, R.string.setup_valider, primary = true) { submit() })
 
+        column.addView(Ui.spacing(this))
+        column.addView(Ui.button(this, R.string.setup_maj, primary = false) { startActivity(Intent(this, UpdateActivity::class.java)) })
+
         if (currentOrigin != null) {
             column.addView(Ui.spacing(this))
             column.addView(Ui.button(this, R.string.setup_annuler, primary = false) { finish() })

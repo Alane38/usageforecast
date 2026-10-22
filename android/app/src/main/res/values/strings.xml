@@ -19,4 +19,18 @@
     <string name="reseau_aide">Vérifie ta connexion, puis réessaie. Si l\'adresse a changé, modifie-la.</string>
     <string name="reseau_reessayer">Réessayer</string>
     <string name="reseau_modifier">Changer l\'adresse</string>
+
+    <string name="maj_titre">Mises à jour</string>
+    <string name="maj_version">Version installée : %1$s.</string>
+    <string name="maj_chercher">Rechercher une mise à jour</string>
+    <string name="maj_installer">Télécharger et installer</string>
+    <string name="maj_recherche">Recherche en cours…</string>
+    <string name="maj_a_jour">UsageForecast %1$s est à jour.</string>
+    <string name="maj_disponible">La version %1$s est disponible (tu as la %2$s).</string>
+    <string name="maj_autoriser">Android doit d\'abord autoriser cette application à installer des mises à jour : active l\'option dans l\'écran qui s\'ouvre, puis reviens et réessaie.</string>
+    <string name="maj_telechargement">Téléchargement… %1$d %%</string>
+    <string name="maj_verifie">Empreinte vérifiée. Installation…</string>
+    <string name="maj_echec">Mise à jour impossible.</string>
+    <string name="maj_bandeau">UsageForecast %1$s est disponible · toucher pour mettre à jour</string>
+    <string name="setup_maj">Mises à jour</string>
 </resources>

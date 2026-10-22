@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Mise à jour intégrée : Android demande une autorisation « sources inconnues » pour cette application, une fois. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Sauvegarde coupée : le stockage de la PWA contient la clé de déchiffrement. -->
     <application
@@ -27,6 +29,14 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+
+        <activity
+            android:name=".UpdateActivity"
+            android:exported="false" />
+
+        <receiver
+            android:name=".InstallResultReceiver"
+            android:exported="false" />
 
         <activity
             android:name=".SetupActivity"
