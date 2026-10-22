@@ -34,22 +34,28 @@ object WidgetScheduler {
             return
         }
         if (jobs.getPendingJob(PERIODIC_JOB_ID) != null) return
-        jobs.schedule(
-            JobInfo.Builder(PERIODIC_JOB_ID, component(context))
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setPeriodic(PERIOD_MS)
-                .build(),
-        )
+        scheduleSafely(jobs, JobInfo.Builder(PERIODIC_JOB_ID, component(context))
+            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+            .setPeriodic(PERIOD_MS)
+            .build())
     }
 
     /** Un rafraîchissement unique dès que le réseau est là (ajout du widget, nouveau lien d'association). */
     fun refreshSoon(context: Context) {
         if (widgetCount(context) == 0) return
-        scheduler(context)?.schedule(
-            JobInfo.Builder(NOW_JOB_ID, component(context))
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .build(),
-        )
+        val jobs = scheduler(context) ?: return
+        scheduleSafely(jobs, JobInfo.Builder(NOW_JOB_ID, component(context))
+            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+            .build())
+    }
+
+    /** Un refus du système ne doit jamais faire planter le récepteur du widget (les autres déclencheurs continuent). */
+    private fun scheduleSafely(jobs: JobScheduler, job: JobInfo) {
+        try {
+            jobs.schedule(job)
+        } catch (_: SecurityException) {
+            // Permission réseau absente : la mise à jour périodique du système et l'ouverture de l'application prennent le relais.
+        }
     }
 
     fun cancelAll(context: Context) {

@@ -11,8 +11,8 @@ import java.time.Instant
 
 /** Construit les RemoteViews du widget à partir de l'état local (aucun accès réseau ici). */
 object WidgetRenderer {
-    /** Sous cette hauteur (une ligne de lanceur), on utilise la disposition compacte. */
-    private const val COMPACT_BELOW_DP = 100
+    /** Sous cette hauteur, la grande disposition (avec son en-tête) ne tient pas : disposition compacte, bouton en bas à droite. */
+    private const val COMPACT_BELOW_DP = 165
 
     private sealed interface State {
         data class Message(val text: Int) : State
@@ -38,7 +38,7 @@ object WidgetRenderer {
         if (ids.isEmpty()) return
         val state = stateOf(context)
         for (id in ids) {
-            manager.updateAppWidget(id, build(context, layoutFor(manager, id), state))
+            manager.updateAppWidget(id, build(context, layoutFor(context, manager, id), state))
         }
     }
 
@@ -141,16 +141,24 @@ object WidgetRenderer {
     fun markRefreshing(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
         for (id in manager.getAppWidgetIds(ComponentName(context, UsageWidgetProvider::class.java))) {
-            val layout = layoutFor(manager, id)
+            val layout = layoutFor(context, manager, id)
             val views = RemoteViews(context.packageName, layout)
             views.setTextViewText(R.id.widget_footer, context.getString(R.string.widget_actualisation))
             manager.partiallyUpdateAppWidget(id, views)
         }
     }
 
-    private fun layoutFor(manager: AppWidgetManager, id: Int): Int {
-        val minHeight = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-        return if (minHeight in 1 until COMPACT_BELOW_DP) R.layout.widget_compact else R.layout.widget_large
+    /**
+     * Hauteur réelle du widget : en portrait c'est OPTION_APPWIDGET_MAX_HEIGHT, en paysage OPTION_APPWIDGET_MIN_HEIGHT
+     * (la valeur « minimale » est celle du mode paysage : la lire en portrait faisait choisir la disposition compacte à un widget haut).
+     */
+    private fun layoutFor(context: Context, manager: AppWidgetManager, id: Int): Int {
+        val options = manager.getAppWidgetOptions(id)
+        val portrait = context.resources.configuration.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val height = options.getInt(
+            if (portrait) AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT else AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0,
+        )
+        return if (height in 1 until COMPACT_BELOW_DP) R.layout.widget_compact else R.layout.widget_large
     }
 
     private fun refreshIntent(context: Context): PendingIntent {

@@ -6,7 +6,7 @@ Une **coque WebView** qui enveloppe la PWA de `mobile/pwa`. Pourquoi pas une TWA
 - **Le fragment du lien contient la clé** : il sert au seul premier chargement, reste en mémoire, n'est jamais écrit, journalisé ni envoyé ailleurs. La PWA le range ensuite dans son propre stockage.
 - Changer d'adresse ou chercher une mise à jour : **onglet Réglages de l'application, carte « Application Android »** (la seule voie évidente avec la navigation par gestes) ; sinon appui long sur Retour, ou appui long sur l'icône de l'application puis « Adresse du relais » (seule voie avec la navigation par gestes). Changer de relais ou « Oublier » efface le stockage de la PWA (donc l'ancienne clé).
 - JavaScript, localStorage, IndexedDB et service worker sont actifs : la PWA marche hors ligne avec ses dernières données.
-- Sécurité : permission `INTERNET` (plus `REQUEST_INSTALL_PACKAGES` pour la mise à jour intégrée), aucun trafic en clair, sauvegarde Android désactivée (le stockage contient la clé), liens vers un autre domaine ouverts dans le navigateur, aucun journal.
+- Sécurité : permissions `INTERNET`, `ACCESS_NETWORK_STATE` (tâche du widget « réseau requis ») et `REQUEST_INSTALL_PACKAGES` (mise à jour intégrée), aucun trafic en clair, sauvegarde Android désactivée (le stockage contient la clé), liens vers un autre domaine ouverts dans le navigateur, aucun journal.
 - Thème sombre par défaut, comme la PWA. Aucune bibliothèque tierce (WebView et framework Android seuls ; JUnit pour les tests).
 
 ## Widget

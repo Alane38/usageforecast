@@ -39,6 +39,7 @@
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/session_reset"
+            android:layout_marginEnd="8dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
@@ -118,6 +119,7 @@
                 android:textSize="11sp" />
             <TextView
                 android:id="@+id/weekly_reset"
+            android:layout_marginEnd="8dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"

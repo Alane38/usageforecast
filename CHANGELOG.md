@@ -2,7 +2,13 @@
 
 Format : une section par version, la plus récente en haut.
 
-## 1.18.6 : 23 octobre 2026
+## 1.18.7 : 23 octobre 2026
+
+### Corrigé
+- **Android : le widget plantait à chaque mise à jour** (cause de « le widget ne se met pas à jour »). La tâche de fond demande une connexion réseau, ce qui exige la permission `ACCESS_NETWORK_STATE`, absente de l'APK : Android levait une `SecurityException` dans le récepteur du widget. Permission ajoutée (ordinaire, accordée à l'installation) et planification protégée contre un refus du système. Trouvé et vérifié sur un émulateur Android (journal du plantage, puis widget mis à jour sans erreur).
+- **Android : disposition du widget.** La hauteur lue en portrait était celle du mode paysage, donc un widget haut gardait la disposition compacte. La grande disposition affiche maintenant son **en-tête avec le bouton ↻**. Le texte « reset dans … » ne touche plus le pourcentage.
+
+## 1.18.6 : 23 octobre 2026 (APK affecté par le plantage ci-dessus)
 
 ### Corrigé
 - **Widget Android : vrai bouton d'actualisation.** Le texte « ↻ actualiser » en bout de la ligne du bas était coupé dès que cette ligne était longue (taille moyenne ou grande). Un **bouton rond en bas à droite**, toujours visible dans les deux tailles, remplace ce texte ; le pied annonce « Actualisation… » pendant la mise à jour, et peut passer sur deux lignes dans la grande disposition pour ne plus couper le budget du jour.

@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Obligatoire pour une tâche de fond « réseau requis » (widget) : sans elle, JobScheduler lève une SecurityException. Permission ordinaire, accordée à l'installation. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Mise à jour intégrée : Android demande une autorisation « sources inconnues » pour cette application, une fois. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
