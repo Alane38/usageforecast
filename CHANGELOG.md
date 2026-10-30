@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.19.1 : 30 octobre 2026
+
+### Corrigé
+- **Planning de la semaine : étiquette sous le mauvais bloc.** Quand le bloc gris « avant auj. » était trop étroit (début de semaine), son étiquette était décalée sous le bloc d'aujourd'hui, qui paraissait s'appeler « avant auj. », et « auj. » disparaissait. Une étiquette n'est maintenant gardée que sous son propre bloc. Logique déplacée dans `PlanLabels` et testée (5 tests), nouvelle scène « début de semaine ».
+
 ## 1.19.0 : 23 octobre 2026
 
 ### Modifié

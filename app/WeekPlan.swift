@@ -58,3 +58,30 @@ enum WeekPlan {
         return result
     }
 }
+
+/// Placement des étiquettes sous les blocs du planning. Logique pure : testable sans l'interface.
+enum PlanLabels {
+    /// Largeur approximative d'une étiquette de 11 pt.
+    static func labelWidth(_ text: String) -> CGFloat { CGFloat(text.count) * 6.2 + 4 }
+
+    /// Centres des étiquettes retenues. Une étiquette n'est gardée que si elle est **centrée sous son propre bloc**, sans recouvrir
+    /// la dernière gardée : un bloc trop étroit pour la sienne la perdait en la décalant sous le bloc voisin, ce qui désignait le
+    /// mauvais jour (« avant auj. » sous le bloc d'aujourd'hui). Elle reste dans la largeur disponible.
+    static func place(texts: [String], blockWidths: [CGFloat], gap: CGFloat) -> [(index: Int, centerX: CGFloat)] {
+        let total = blockWidths.reduce(0, +) + gap * CGFloat(max(blockWidths.count - 1, 0))
+        var result: [(index: Int, centerX: CGFloat)] = []
+        var cursor: CGFloat = 0
+        var lastRight: CGFloat = -.infinity
+        for (index, width) in blockWidths.enumerated() {
+            defer { cursor += width + gap }
+            let labelWidth = labelWidth(texts[index])
+            let blockCenter = cursor + width / 2
+            let center = min(max(blockCenter, labelWidth / 2), max(total - labelWidth / 2, labelWidth / 2))
+            let staysUnderItsBlock = center >= cursor - 2 && center <= cursor + width + 2
+            guard staysUnderItsBlock, center - labelWidth / 2 >= lastRight + 2 else { continue }
+            result.append((index, center))
+            lastRight = center + labelWidth / 2
+        }
+        return result
+    }
+}

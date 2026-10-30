@@ -806,4 +806,16 @@ check(UpdateChecker.parseList(Data("[\(releaseJSON("android-v1.18.8"))]".utf8)) 
 check(UpdateChecker.parse(Data(releaseJSON("android-v1.18.8").utf8)) == nil, "mise à jour Mac : un tag android-v… n'est pas une release du Mac")
 check(UpdateChecker.parseList(Data("pas du json".utf8)) == nil && UpdateChecker.parseList(Data("[]".utf8)) == nil, "mise à jour Mac : réponse vide ou illisible -> rien")
 
+
+// Étiquettes du planning : jamais sous le mauvais bloc (cas vu le 30/10 : « avant auj. » sous le bloc d'aujourd'hui).
+let planTexts = ["avant auj.", "auj.", "dem.", "dim", "lun", "mar", "mer"]
+let planWidths: [CGFloat] = [8, 55, 56, 56, 56, 56, 28]
+let placedLabels = PlanLabels.place(texts: planTexts, blockWidths: planWidths, gap: 2)
+check(!placedLabels.contains { $0.index == 0 }, "étiquettes : un premier bloc trop étroit perd son étiquette au lieu de la décaler sous le voisin")
+check(placedLabels.contains { $0.index == 1 }, "étiquettes : « auj. » apparaît sous le bloc d'aujourd'hui")
+check(placedLabels.map(\.index) == [1, 2, 3, 4, 5, 6], "étiquettes : un jour par bloc, dans l'ordre")
+let wideGrey = PlanLabels.place(texts: ["avant auj.", "auj."], blockWidths: [90, 60], gap: 2)
+check(wideGrey.map(\.index) == [0, 1], "étiquettes : un bloc gris assez large garde « avant auj. »")
+check(PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).isEmpty || PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).allSatisfy { $0.centerX >= 0 }, "étiquettes : blocs minuscules sans plantage")
+
 exit(failures == 0 ? 0 : 1)

@@ -100,7 +100,7 @@ struct WeekPlanDisclosure: View {
             let widths = [width(plan.usedBeforeToday, proxy.size.width, count: count)]
                 + plan.segments.map { width($0.percent, proxy.size.width, count: count) }
             let texts = [greyLabel] + plan.segments.map(\.label)
-            let placed = Self.placeLabels(texts: texts, blockWidths: widths, gap: 2)
+            let placed = PlanLabels.place(texts: texts, blockWidths: widths, gap: 2)
             ZStack(alignment: .topLeading) {
                 ForEach(placed, id: \.index) { label in
                     Text(texts[label.index]).font(.system(size: 11)).fixedSize().position(x: label.centerX, y: 7)
@@ -108,24 +108,5 @@ struct WeekPlanDisclosure: View {
             }
         }
         .frame(height: 14)
-    }
-
-    /// Centres des étiquettes retenues : une étiquette est gardée si elle ne recouvre pas la dernière gardée, et elle reste
-    /// dans la largeur disponible (un premier bloc étroit ne la rogne plus).
-    static func placeLabels(texts: [String], blockWidths: [CGFloat], gap: CGFloat) -> [(index: Int, centerX: CGFloat)] {
-        let total = blockWidths.reduce(0, +) + gap * CGFloat(max(blockWidths.count - 1, 0))
-        var result: [(index: Int, centerX: CGFloat)] = []
-        var cursor: CGFloat = 0
-        var lastRight: CGFloat = -.infinity
-        for (index, width) in blockWidths.enumerated() {
-            let labelWidth = CGFloat(texts[index].count) * 6.2 + 4
-            let center = min(max(cursor + width / 2, labelWidth / 2), max(total - labelWidth / 2, labelWidth / 2))
-            if center - labelWidth / 2 >= lastRight + 2 {
-                result.append((index, center))
-                lastRight = center + labelWidth / 2
-            }
-            cursor += width + gap
-        }
-        return result
     }
 }
