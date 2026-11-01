@@ -64,6 +64,12 @@ enum PlanLabels {
     /// Largeur approximative d'une étiquette de 11 pt.
     static func labelWidth(_ text: String) -> CGFloat { CGFloat(text.count) * 6.2 + 4 }
 
+    /// Le texte complet s'il tient sous son bloc, sinon sa forme courte : « avant auj. » trop large pour un petit bloc gris recouvrait
+    /// l'étiquette d'aujourd'hui, qui disparaissait.
+    static func fitting(_ full: String, short: String, blockWidth: CGFloat) -> String {
+        labelWidth(full) <= blockWidth + 4 ? full : short
+    }
+
     /// Centres des étiquettes retenues. Une étiquette n'est gardée que si elle est **centrée sous son propre bloc**, sans recouvrir
     /// la dernière gardée : un bloc trop étroit pour la sienne la perdait en la décalant sous le bloc voisin, ce qui désignait le
     /// mauvais jour (« avant auj. » sous le bloc d'aujourd'hui). Elle reste dans la largeur disponible.

@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.19.2 : 1er novembre 2026
+
+### Corrigé
+- **Planning de la semaine : « auj. » manquait** quand le bloc gris « avant auj. » était étroit (12 % de la barre) : son étiquette, trop large, recouvrait celle d'aujourd'hui, qui était supprimée, et le bloc d'aujourd'hui paraissait porter « avant auj. ». L'étiquette grise prend sa forme courte (« avant », « util. ») dans un bloc étroit : les deux restent affichées. Test du cas réel (5 étiquettes).
+
 ## 1.19.1 : 30 octobre 2026
 
 ### Corrigé

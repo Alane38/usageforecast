@@ -99,7 +99,8 @@ struct WeekPlanDisclosure: View {
             let count = plan.segments.count
             let widths = [width(plan.usedBeforeToday, proxy.size.width, count: count)]
                 + plan.segments.map { width($0.percent, proxy.size.width, count: count) }
-            let texts = [greyLabel] + plan.segments.map(\.label)
+            let shortGrey = greyLabel == "utilisé" ? "util." : "avant"
+            let texts = [PlanLabels.fitting(greyLabel, short: shortGrey, blockWidth: widths[0])] + plan.segments.map(\.label)
             let placed = PlanLabels.place(texts: texts, blockWidths: widths, gap: 2)
             ZStack(alignment: .topLeading) {
                 ForEach(placed, id: \.index) { label in

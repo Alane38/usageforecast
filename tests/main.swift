@@ -818,4 +818,12 @@ let wideGrey = PlanLabels.place(texts: ["avant auj.", "auj."], blockWidths: [90,
 check(wideGrey.map(\.index) == [0, 1], "étiquettes : un bloc gris assez large garde « avant auj. »")
 check(PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).isEmpty || PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).allSatisfy { $0.centerX >= 0 }, "étiquettes : blocs minuscules sans plantage")
 
+
+// Étiquette du bloc gris : forme courte quand il est étroit, pour ne pas recouvrir « auj. » (capture du 1/11 : 12 % avant aujourd'hui).
+check(PlanLabels.fitting("avant auj.", short: "avant", blockWidth: 38) == "avant" && PlanLabels.fitting("avant auj.", short: "avant", blockWidth: 90) == "avant auj.", "étiquettes : « avant auj. » devient « avant » dans un bloc étroit")
+let reportedWidths: [CGFloat] = [38, 79, 79, 79, 40]
+let reportedTexts = ["avant auj.", "auj.", "dem.", "mar", "mer"]
+let fittedTexts = [PlanLabels.fitting(reportedTexts[0], short: "avant", blockWidth: reportedWidths[0])] + Array(reportedTexts.dropFirst())
+check(PlanLabels.place(texts: fittedTexts, blockWidths: reportedWidths, gap: 2).map(\.index) == [0, 1, 2, 3, 4], "étiquettes : cas du 1/11, les cinq étiquettes sont affichées, dont « auj. »")
+
 exit(failures == 0 ? 0 : 1)
