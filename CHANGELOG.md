@@ -2,7 +2,7 @@
 
 Format : une section par version, la plus récente en haut.
 
-## Prochaine version (non publiée)
+## 1.20.0 : 1er novembre 2026
 
 ### Ajouté
 - **Prêt de quota** (ADR 003, étape 2 côté Mac). Réglages › **Prêt** : prêter une part de la limite hebdomadaire à une autre personne (curseur de 10 à 90 %, fin du prêt par défaut au prochain reset), en collant le lien affiché par son collecteur (`mobile/collector`, Windows, Linux ou macOS). Le popover montre un bloc « Prêt » : part de l'invité et ta réserve, prévision d'épuisement, provenance des chiffres (mesurés ou estimés) et fraîcheur du collecteur.
