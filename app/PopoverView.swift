@@ -74,6 +74,8 @@ struct PopoverView: View {
                 Divider()
                 LoanBlock(usageManager: usageManager)
                 Divider()
+            } else if usageManager.revocationStatus != nil {
+                RevocationLine(usageManager: usageManager)
             }
             WeekPlanDisclosure(usageManager: usageManager)
             HistoryDisclosure(usageManager: usageManager)

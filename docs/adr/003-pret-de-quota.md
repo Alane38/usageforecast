@@ -66,6 +66,13 @@ Faits établis (vérifiés le 1er novembre 2026) :
    Limites : le retrait d'une invitation n'est pas atomique (lecture puis suppression : deux retraits simultanés pourraient réussir) ;
    un prêt créé sur le Mac en collant le lien du collecteur n'a pas de vue d'invité (pas de code ni de coffre de lecture côté Mac).
 4. Révocation vérifiée et fin de prêt (effacement du coffre : nouvelle route `DELETE` du relais, protégée par le jeton d'écriture).
+   Fait. À la fin d'un prêt, le Mac publie une dernière vue (`active: false`), efface le coffre d'activité de l'invité
+   (`DELETE /v1/<id>` avec le jeton d'écriture) et surveille la semaine 48 h (`LoanRevocation`) : à partir de 2 points pris sans
+   Claude Code sur ce Mac, alerte « activité inexpliquée » (non désactivable, une fois par fin de prêt), aussi montrée sur le téléphone.
+   Le seuil de 2 points est une hypothèse : en dessous, ce peut être l'usage de claude.ai par le propriétaire, que le Mac ne voit pas.
+   Le collecteur lit la vue avant chaque envoi : sur « prêt terminé », il s'arrête et ne recrée pas le coffre. `collecteur demarrage-auto`
+   l'installe à l'ouverture de session (unité systemd utilisateur, LaunchAgent, script du dossier Démarrage de Windows) ;
+   il n'est relancé qu'après un plantage, pas après la fin d'un prêt.
 
 ## Alternatives écartées
 - **Exiger le statusline chez l'invité** : il faudrait modifier ses réglages Claude Code, et `rate_limits` a déjà disparu dans une version

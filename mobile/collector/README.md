@@ -17,10 +17,15 @@ collecteur associer 'https://ton-relais.workers.dev/#v1.<id>.<clé>'   # ou : ut
 collecteur une-fois --essai     # montre ce qui serait envoyé, sans rien envoyer
 collecteur lancer               # tourne en continu
 collecteur etat                 # association, dernier envoi, dernière activité vue
+collecteur demarrage-auto       # le lance à chaque ouverture de session (« demarrage-auto retirer » pour l'enlever)
 ```
 
 Le lien contient la clé : il se transmet par un canal privé. Sous Windows, l'exécutable n'est pas signé : SmartScreen demande
-« Informations complémentaires › Exécuter quand même » au premier lancement.
+« Informations complémentaires › Exécuter quand même » au premier lancement. Sur macOS, un exécutable téléchargé est mis en
+quarantaine : `xattr -d com.apple.quarantine usageforecast-collecteur-macos-arm64` avant le premier lancement.
+
+**Fin du prêt** : avant chaque envoi, le collecteur lit sa vue ; quand le propriétaire a terminé le prêt, il s'arrête (et ne
+redémarre pas tout seul : le démarrage automatique ne le relance qu'après un plantage).
 
 ## Fonctionnement
 
@@ -45,4 +50,5 @@ bun run build:collector                 # 5 exécutables autonomes (≈ 90 à 11
 
 Avec un code, le collecteur affiche aussi le lien du **tableau de bord de l'invité** (l'application mobile, à ouvrir dans un navigateur).
 
-Pas encore fait (ADR 003, étape 4) : révocation vérifiée, démarrage automatique avec la session.
+Démarrage automatique : unité systemd utilisateur (Linux, journal `journalctl --user -u usageforecast-collecteur`), LaunchAgent
+(macOS, journal `~/Library/Logs/usageforecast-collecteur.log`), script sans fenêtre dans le dossier Démarrage (Windows).

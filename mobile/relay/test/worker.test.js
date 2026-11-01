@@ -86,9 +86,9 @@ describe("lecture", () => {
 
   test("méthodes non permises", async () => {
     const env = { VAULT: fakeKV() };
-    const response = await call(env, "DELETE", `/v1/${ID}`);
+    const response = await call(env, "POST", `/v1/${ID}`);
     expect(response.status).toBe(405);
-    expect(response.headers.get("allow")).toBe("GET, PUT");
+    expect(response.headers.get("allow")).toBe("GET, PUT, DELETE");
     expect((await call(env, "POST", "/")).status).toBe(405);
   });
 });
@@ -136,5 +136,30 @@ describe("invitations de prêt", () => {
     expect((await call(env, "GET", `/v1/invite/${ID}/claim`)).status).toBe(405);
     expect((await call(env, "GET", `/v1/invite/${ID}`)).status).toBe(405);
     expect((await call(env, "POST", "/v1/invite/xyz/claim")).status).toBe(405);   // identifiant mal formé : aucune route ne répond
+  });
+});
+
+describe("effacement d'un coffre (fin de prêt)", () => {
+  const withDelete = () => {
+    const kv = fakeKV();
+    kv.delete = async (key) => { kv.store.delete(key); };
+    return { VAULT: kv };
+  };
+
+  test("le détenteur du jeton efface le coffre et son jeton ; ensuite, plus rien à lire", async () => {
+    const env = withDelete();
+    await call(env, "PUT", `/v1/${ID}`, { body: BLOB, token: TOKEN });
+    expect((await call(env, "DELETE", `/v1/${ID}`, { token: TOKEN })).status).toBe(200);
+    expect(env.VAULT.store.size).toBe(0);
+    expect((await call(env, "GET", `/v1/${ID}`)).status).toBe(404);
+    expect((await call(env, "DELETE", `/v1/${ID}`, { token: TOKEN })).status).toBe(200);   // déjà effacé : pas une erreur
+  });
+
+  test("refus : sans jeton ou avec le jeton d'un autre ; le coffre reste intact", async () => {
+    const env = withDelete();
+    await call(env, "PUT", `/v1/${ID}`, { body: BLOB, token: TOKEN });
+    expect((await call(env, "DELETE", `/v1/${ID}`)).status).toBe(401);
+    expect((await call(env, "DELETE", `/v1/${ID}`, { token: OTHER_TOKEN })).status).toBe(403);
+    expect((await call(env, "GET", `/v1/${ID}`)).status).toBe(200);
   });
 });

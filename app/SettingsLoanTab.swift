@@ -14,7 +14,10 @@ struct LoanTab: View {
 
     private var form: some View {
         Form {
-            if let loan = usageManager.loan { current(loan) } else { creation }
+            if let loan = usageManager.loan { current(loan) } else {
+                if let watch = usageManager.revocationWatch { revocation(watch) }
+                creation
+            }
             Section("Alertes du prêt") {
                 Toggle("Notifications du prêt", isOn: Binding(get: { usageManager.loanAlertsEnabled }, set: { usageManager.setLoanAlerts($0) }))
                 Text("80 % de sa part atteints, dépassement prévu avant la fin du prêt, ta réserve entamée, collecteur muet depuis plus de 7 h.")
@@ -83,6 +86,27 @@ struct LoanTab: View {
             } message: {
                 Text("Le suivi s'arrête et la clé de son coffre est effacée de ce Mac. As-tu retiré son accès sur claude.ai ?")
             }
+        }
+    }
+
+    @ViewBuilder
+    private func revocation(_ watch: RevocationWatch) -> some View {
+        Section("Vérification de la révocation") {
+            LabeledContent("Prêt à \(watch.guestName) terminé", value: AlertRules.moment(watch.endedAt))
+            if let status = usageManager.revocationStatus {
+                Text(LoanRevocation.summary(watch: watch, status: status, now: Date()))
+                    .font(.caption).foregroundColor(status.phase == .suspicious ? .red : .secondary)
+                if status.phase == .suspicious {
+                    Text("Sur claude.ai : Settings › Claude Code (corbeille), ou Settings › Account › Log Out pour tout déconnecter. Si c'était toi sur claude.ai (web ou téléphone), ignore ce message.")
+                        .font(.caption).foregroundColor(.secondary)
+                    Link("Ouvrir les réglages de claude.ai", destination: URL(string: "https://claude.ai/settings")!)
+                }
+            } else {
+                Text("Premier calcul dans quelques minutes.").font(.caption).foregroundColor(.secondary)
+            }
+            Text("Pendant 48 h, toute hausse de la semaine sans Claude Code sur ce Mac est signalée (à partir de \(Int(LoanRevocation.threshold)) points : en dessous, ce peut être ton usage de claude.ai). Cette alerte ne se désactive pas.")
+                .font(.caption).foregroundColor(.secondary)
+            Button("Masquer") { usageManager.dismissRevocationWatch() }
         }
     }
 

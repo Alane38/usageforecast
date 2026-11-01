@@ -64,6 +64,7 @@ func runLoanTests() {
     check(LoanRules.alerts(loan: loan, state: silent, now: twoDays, calendar: utc).contains { $0.title.hasPrefix("Collecteur de Sam muet") }, "alertes : collecteur jamais entendu après 7 h")
     check(LoanRules.alerts(loan: loan, state: over, now: loan.endsAt, calendar: utc).isEmpty, "alertes : plus rien une fois le prêt terminé")
 
+    runRevocationTests(utc: utc)
     runLoanSyncTests(loan: loan, start: start, samples: samples, guestBuckets: guestBuckets, ownerBuckets: ownerBuckets, utc: utc)
 
     // Journaux de ce Mac : même lecture que le collecteur.
@@ -123,4 +124,34 @@ func runLoanSyncTests(loan: Loan, start: Date, samples: [UsageSample], guestBuck
     check(control.id == "5eb8630571dc84b780e161b6770e21bd", "coffre de contrôle : même identifiant que le téléphone")
     check(MobileCrypto.base64url(control.key.withUnsafeBytes { Data($0) }) == "WYnkzqQ3h3V4pt-UEed36U56vxWZghyPB2XK3kn1Xaw", "coffre de contrôle : même clé que le téléphone")
     #endif
+}
+
+/// Étape 4 : vérification de la révocation pendant les 48 h qui suivent un prêt.
+func runRevocationTests(utc: Calendar) {
+    let ended = Date(timeIntervalSince1970: 1_900_000_000)
+    let t0 = ended.timeIntervalSince1970
+    let watch = RevocationWatch(endedAt: ended, guestName: "Sam")
+    func at(_ hours: Double, _ weekly: Double) -> UsageSample { UsageSample(time: t0 + hours * 3600, session: nil, weekly: weekly) }
+    // 1 h : +1 avec Claude Code sur ce Mac ; 2 h : +1 sans ; 3 h : +2 sans ; 50 h : +5 (après la fenêtre de 48 h) ; reset entre-temps.
+    let samples = [at(-0.1, 40), at(1, 41), at(2, 42), at(3, 44), at(10, 3), at(50, 8)]
+    let owner = [ActivityBucket(t: t0 + 3600 - 900, n: 1, input: 0, output: 50, cacheWrite: 0, cacheRead: 0)]
+
+    let early = LoanRevocation.status(watch: watch, samples: samples, owner: owner, now: ended.addingTimeInterval(2.5 * 3600))
+    check(early.phase == .watching && early.unexplained == 1 && early.ownerPoints == 1, "révocation : ton propre usage n'est pas suspect ; 1 point inexpliqué reste sous le seuil")
+    check(LoanRevocation.alert(watch: watch, status: early, now: ended) == nil, "révocation : pas d'alerte sous le seuil")
+
+    let later = LoanRevocation.status(watch: watch, samples: samples, owner: owner, now: ended.addingTimeInterval(4 * 3600))
+    check(later.phase == .suspicious && later.unexplained == 3, "révocation : 3 points sans activité de ta part -> suspect")
+    let alert = LoanRevocation.alert(watch: watch, status: later, now: ended.addingTimeInterval(4 * 3600), calendar: utc)
+    check(alert?.key == "loan-revocation-1900000000" && alert?.body.contains("3 points") == true && alert?.body.contains("Log Out") == true,
+          "révocation : l'alerte dit combien, depuis quand, et comment tout déconnecter (une seule fois par fin de prêt)")
+
+    let quiet = [at(-0.1, 40), at(1, 41), at(20, 41), at(49, 41)]
+    let done = LoanRevocation.status(watch: watch, samples: quiet, owner: owner, now: ended.addingTimeInterval(49 * 3600))
+    check(done.phase == .clear && done.unexplained == 0, "révocation : 48 h sans hausse inexpliquée -> vérifiée")
+    let lateRise = LoanRevocation.status(watch: watch, samples: quiet + [at(60, 50)], owner: [], now: ended.addingTimeInterval(61 * 3600))
+    check(lateRise.phase == .clear, "révocation : une hausse après les 48 h n'est plus comptée")
+    let info = LoanRevocation.info(watch: watch, status: later)
+    check(info.phase == "suspicious" && info.unexplained == 3 && info.watchEndsAt == ended.addingTimeInterval(48 * 3600), "révocation : résumé pour le téléphone")
+    check(LoanRevocation.summary(watch: watch, status: done, now: ended).hasPrefix("Révocation vérifiée"), "révocation : texte de fin")
 }

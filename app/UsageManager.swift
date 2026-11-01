@@ -138,6 +138,9 @@ class UsageManager: ObservableObject {
     @Published var loanAlertsEnabled = true
     var lastLoanRefresh: Date? = nil
     var lastLoanCommandPoll: Date? = nil
+    @Published var revocationWatch: RevocationWatch? = nil
+    @Published var revocationStatus: RevocationStatus? = nil
+    var lastRevocationCheck: Date? = nil
     var lastGuestViewPublish: Date? = nil
     let transcriptScanner = TranscriptScanner()
 

@@ -6,14 +6,16 @@ import Foundation
 extension UsageManager {
     private static let loanStorageName = "loan"
     private static let loanAlertsStorageName = "loan_alerts_enabled"
-    private static let loanQueue = DispatchQueue(label: "usageforecast.loan", qos: .utility)
+    static let loanQueue = DispatchQueue(label: "usageforecast.loan", qos: .utility)
     /// Un rapport toutes les 5 minutes au plus : le collecteur n'envoie pas plus souvent que toutes les 10 minutes.
     private static let loanRefreshInterval: TimeInterval = 270
 
     func loadLoan() {
         let defaults = UserDefaults.standard
         loanAlertsEnabled = defaults.object(forKey: Self.loanAlertsStorageName) as? Bool ?? true
-        guard !isProbeRun, let data = defaults.data(forKey: Self.loanStorageName) else { return }
+        guard !isProbeRun else { return }
+        loadRevocationWatch()
+        guard let data = defaults.data(forKey: Self.loanStorageName) else { return }
         loan = try? JSONDecoder().decode(Loan.self, from: data)
     }
 
@@ -62,13 +64,15 @@ extension UsageManager {
 
     /// Termine le prêt ici. La révocation de l'accès se fait sur claude.ai (Settings › Claude Code) : l'app ne peut pas la faire.
     func endLoan(now: Date = Date()) {
+        guard let ended = loan else { return }
         publishFinalGuestView(now: now)   // l'invité voit « Prêt terminé » au lieu d'une vue figée
+        deleteGuestVault(ended)           // son activité ne reste pas sur le relais
         loan = nil
         (guestReport, loanState, loanStatus) = (nil, nil, "")
         AppSecrets.store.delete(account: AppSecrets.loanKeyAccount)
         AppSecrets.store.delete(account: AppSecrets.loanViewKeyAccount)
         saveLoan()
-        UserDefaults.standard.set(now, forKey: "loan_ended_at")   // point de départ de la vérification de révocation (étape 4)
+        startRevocationWatch(guestName: ended.displayName, now: now)
     }
 
     func refreshLoan(now: Date = Date(), force: Bool = false) {
@@ -129,7 +133,7 @@ extension UsageManager {
         }
     }
 
-    private func notifyLoan(_ alerts: [LoanAlert]) {
+    func notifyLoan(_ alerts: [LoanAlert]) {
         let fresh = alerts.filter { !alertLedger.has($0.key) }
         for alert in fresh {
             Notifier.send(title: alert.title, body: alert.body, id: alert.key)

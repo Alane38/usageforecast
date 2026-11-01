@@ -8,8 +8,11 @@ import { pairingLink } from "../pwa/lib/crypto.js";
 import { formatCode, normalizeCode } from "../pwa/lib/loan.js";
 import { claudeProjectDirs, collectorConfigDir } from "./lib/paths.js";
 import { forgetPairing, loadPairing, loadState, savePairing, saveState } from "./lib/store.js";
+import { autostartPlan } from "./lib/autostart.js";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 const LOOP_MS = 60 * 1000;
 
 const context = { env: process.env, home: homedir(), platform: osPlatform() };
@@ -28,6 +31,7 @@ const HELP = `Collecteur UsageForecast ${VERSION}
   lancer                         tourne en continu (un tour par minute, envoi seulement s'il y a de l'activité)
   une-fois [--essai] [--forcer]  un seul tour ; --essai affiche ce qui serait envoyé sans rien envoyer
   etat                           association, dernier envoi, dernière activité vue
+  demarrage-auto [retirer]       lance (ou ne lance plus) le collecteur à chaque ouverture de session
   oublier                        supprime l'association de cette machine
 
 Ce qui est envoyé : des heures et des nombres de tokens. Jamais le texte de tes conversations, tes projets ni tes fichiers.`;
@@ -40,12 +44,51 @@ async function cycle({ dryRun = false, force = false } = {}) {
   return { result, state };
 }
 
+/** Lance les commandes ; vrai si toutes ont réussi (les échecs sont affichés). */
+function run(commands) {
+  let ok = true;
+  for (const command of commands) {
+    let result;
+    try {
+      result = Bun.spawnSync(command, { stdout: "ignore", stderr: "pipe" });
+    } catch (error) {
+      console.error(`« ${command[0]} » introuvable : ${error.message}`);
+      ok = false;
+      continue;
+    }
+    if (result.exitCode !== 0) {
+      console.error(`« ${command.join(" ")} » a échoué : ${result.stderr.toString().trim() || `code ${result.exitCode}`}`);
+      ok = false;
+    }
+  }
+  return ok;
+}
+
+function autostart(remove) {
+  const plan = autostartPlan({ ...context, execPath: process.execPath, scriptPath: Bun.main, uid: process.getuid?.() });
+  if (!plan) throw new Error(`démarrage automatique non pris en charge sur ${context.platform}`);
+  if (remove) {
+    run(plan.stop);
+    rmSync(plan.file, { force: true });
+    console.log(`Démarrage automatique retiré (${plan.file}).`);
+    return;
+  }
+  if (!loadPairing(configDir)) throw new Error("collecteur non associé : lance d'abord « associer »");
+  mkdirSync(dirname(plan.file), { recursive: true });
+  writeFileSync(plan.file, plan.content);
+  const started = run(plan.start);
+  console.log(started
+    ? `Le collecteur se lancera à chaque ouverture de session, et tourne dès maintenant.\nFichier : ${plan.file}\n${plan.note}`
+    : `Fichier écrit (${plan.file}), mais le démarrage immédiat a échoué (voir ci-dessus) : il se lancera à la prochaine ouverture de session.\nEn attendant : « collecteur lancer ».`);
+}
+
 async function main(args) {
   const [command, ...rest] = args;
   if (command === "associer" && rest[1]) {
     const outcome = await pairingFromCode(rest[0], rest[1]);
     if (outcome.error) throw new Error(outcome.error);
     savePairing(configDir, outcome.pairing);
+    saveState(configDir, { ...loadState(configDir), loanEnded: false });   // nouveau prêt : on repart
     const { invite } = outcome;
     console.log(`Associé au prêt (code ${formatCode(normalizeCode(rest[1]))}) : ${Math.round(invite.share * 100)} % de la semaine jusqu'au ${invite.endsAt.toLocaleString("fr-FR")}.`);
     console.log(`\nTon tableau de bord (ouvre-le dans ton navigateur, puis « Installer ») :\n${outcome.viewLink}\n`);
@@ -67,6 +110,10 @@ async function main(args) {
     console.log(`Collecteur lancé. Journaux lus dans : ${dirs.join(", ")}`);
     for (;;) {
       const { result } = await cycle();
+      if (result.ended) {
+        console.log("Prêt terminé : le propriétaire du compte y a mis fin. Le collecteur s'arrête (« collecteur demarrage-auto retirer » pour ne plus le lancer).");
+        return;
+      }
       if (result.sent) console.log(`${new Date().toLocaleTimeString("fr-FR")} envoyé (${result.reason})`);
       else if (result.error) console.error(`${new Date().toLocaleTimeString("fr-FR")} échec : ${result.error}`);
       await new Promise((resolve) => setTimeout(resolve, LOOP_MS));
@@ -84,6 +131,8 @@ async function main(args) {
       `Journaux : ${dirs.join(", ")}`,
       `Configuration : ${configDir}`,
     ].filter(Boolean).join("\n"));
+  } else if (command === "demarrage-auto") {
+    autostart(rest[0] === "retirer");
   } else if (command === "oublier") {
     forgetPairing(configDir);
     console.log("Association supprimée sur cette machine.");

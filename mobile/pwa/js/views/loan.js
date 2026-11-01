@@ -56,6 +56,19 @@ function codeCard(pending, now) {
     h("p", { class: "muted" }, "Ton Mac reçoit le prêt dans les 5 minutes et commence le suivi."));
 }
 
+function revocationCard(revocation, now) {
+  const texts = {
+    watching: `Rien d'inexpliqué pour l'instant. Ton Mac surveille encore jusqu'à ${moment(revocation.watchEndsAt, now)}.`,
+    clear: "Révocation vérifiée : rien d'inexpliqué pendant les 48 h qui ont suivi le prêt.",
+    suspicious: `${points(revocation.unexplained)} pris sans activité Claude Code sur ton Mac depuis la fin du prêt. Si ce n'était pas toi sur claude.ai, son accès n'est peut-être pas coupé : claude.ai › Settings › Account › Log Out déconnecte tout.`,
+  };
+  const toneName = revocation.phase === "suspicious" ? "danger" : revocation.phase === "clear" ? "ok" : "accent";
+  return h("section", { class: `card tone-${toneName}`, "aria-label": "Vérification de la révocation", role: revocation.phase === "suspicious" ? "alert" : null },
+    h("div", { class: "row" }, h("h2", null, "Vérification de la révocation"), h("span", { class: "muted" }, `prêt à ${revocation.guestName} terminé ${moment(revocation.endedAt, now)}`)),
+    h("p", { class: "chip" }, texts[revocation.phase]),
+    h("p", { class: "muted" }, "Pendant 48 h, ton Mac signale toute hausse de la semaine sans Claude Code de ton côté (à partir de 2 points)."));
+}
+
 function creationCard(snapshot, actions, message) {
   const name = h("input", { class: "link", type: "text", id: "loan-name", autocomplete: "off", placeholder: "Prénom" });
   const share = h("input", { type: "range", id: "loan-share", min: "10", max: "90", step: "5", value: "70" });
@@ -82,7 +95,10 @@ export function loanView(state, actions) {
   const nodes = [];
   if (pending?.action === "create" && loan?.lastCommandID !== pending.commandID) nodes.push(codeCard(pending, new Date(now)));
   if (loan) nodes.push(...currentCard(loan, new Date(now), pending, actions));
-  else if (!pending) nodes.push(creationCard(snapshot, actions, loanMessage));
+  else {
+    if (snapshot?.revocation) nodes.push(revocationCard(snapshot.revocation, new Date(now)));
+    if (!pending) nodes.push(creationCard(snapshot, actions, loanMessage));
+  }
   nodes.push(h("section", { class: "card" },
     h("h2", null, "Comment c'est compté"),
     h("p", { class: "muted" }, "Ton Mac attribue chaque hausse de la semaine à celui qui utilisait Claude Code à ce moment (mesuré) ; aux deux en même temps, au prorata des tokens ; à personne, à l'invité (estimé). Le collecteur de l'invité n'envoie que des heures et des nombres de tokens, chiffrés.")));

@@ -5,9 +5,26 @@ import { dayStamp, pushReason } from "./policy.js";
 import { readNewRecords } from "./reader.js";
 import { buildReport } from "./report.js";
 import { sealJson, writeToken } from "./seal.js";
+import { decryptJson } from "../../pwa/lib/crypto.js";
 
 export function emptyState() {
-  return { files: {}, messages: {}, lastPushAt: null, pushedActivityAt: null, pushDay: null, pushesToday: 0, lastError: null };
+  return { files: {}, messages: {}, lastPushAt: null, pushedActivityAt: null, pushDay: null, pushesToday: 0, lastError: null, loanEnded: false };
+}
+
+/**
+ * Le prêt est-il terminé ? Le Mac du propriétaire publie une dernière vue `active: false` dans le coffre de lecture de l'invité.
+ * Vrai seulement sur cette preuve ; une erreur réseau ou un coffre illisible ne termine rien.
+ */
+export async function loanEnded({ pairing, fetchImpl }) {
+  if (!pairing?.view) return false;
+  try {
+    const response = await fetchImpl(`${pairing.relay}/v1/${pairing.view.id}`, { cache: "no-store" });
+    if (!response.ok) return false;
+    const view = await decryptJson(await response.text(), pairing.view.key);
+    return view?.kind === "guest-view" && view.active === false;
+  } catch {
+    return false;
+  }
 }
 
 /** Envoie un document chiffré au coffre. Retourne null si tout va bien, sinon un message lisible. */
@@ -34,6 +51,7 @@ export async function push({ pairing, report, fetchImpl }) {
  * @returns {Promise<{added: number, reason: string|null, sent: boolean, error: string|null, report: object|null}>}
  */
 export async function runCycle({ pairing, state, now, dirs, fetchImpl = globalThis.fetch, collectorVersion, platform, dryRun = false, force = false }) {
+  if (state.loanEnded) return { added: 0, reason: null, sent: false, error: null, report: null, ended: true };
   const added = merge(state.messages, readNewRecords({ dirs, files: state.files, now }));
   prune(state.messages, now);
   const today = dayStamp(now);
@@ -48,6 +66,11 @@ export async function runCycle({ pairing, state, now, dirs, fetchImpl = globalTh
   const report = buildReport({ messages: state.messages, now, reason, collectorVersion, platform });
   if (dryRun || !pairing) return { added, reason, sent: false, error: pairing ? null : "collecteur non associé", report };
 
+  // Avant chaque envoi : le prêt est-il fini ? Alors on n'envoie plus rien (le Mac a effacé le coffre, on ne le recrée pas).
+  if (await loanEnded({ pairing, fetchImpl })) {
+    state.loanEnded = true;
+    return { added, reason: null, sent: false, error: null, report: null, ended: true };
+  }
   const error = await push({ pairing, report, fetchImpl });
   state.lastError = error;
   if (error) return { added, reason, sent: false, error, report };

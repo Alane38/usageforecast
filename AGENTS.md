@@ -26,7 +26,7 @@ cd mobile && bun run build:collector  # exécutables du collecteur (5 plateforme
 ```
 
 Options de l'app pour vérifier sans cliquer : `--snapshot fichier.png` avec `--demo`, `--light`, `--layout gauges|cards`, `--settings --tab <onglet>`,
-`--demo-mobile`, `--demo-loan` (avec `--loan-guest N`, `--loan-owner N`, `--loan-silent`), `--show-code`, `--used-today N`, `--demo-days N`, `--demo-update`, `--time`, `--bench-chart N`, `--diagnose`. Les captures de démonstration
+`--demo-mobile`, `--demo-loan` (avec `--loan-guest N`, `--loan-owner N`, `--loan-silent`), `--demo-revocation watching|clear|suspicious`, `--show-code`, `--used-today N`, `--demo-days N`, `--demo-update`, `--time`, `--bench-chart N`, `--diagnose`. Les captures de démonstration
 utilisent une **horloge figée** (`AppClock`) : le rendu est identique tous les jours.
 
 ## Règles du projet

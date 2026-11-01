@@ -17,6 +17,6 @@ swiftc -sdk "$SDK" -o build/tests.new \
     app/DesignModels.swift app/PaceText.swift app/UsageAnalytics.swift app/AlertRules.swift app/WeekPlan.swift \
     app/ForecastExport.swift app/SystemSettings.swift app/UsageHistory.swift app/DailyHistory.swift app/CreditsSummary.swift \
     app/AppClock.swift app/UpdateChecker.swift app/Brand.swift app/MobileSyncPolicy.swift app/AppSupport.swift app/FirstRun.swift app/UpdateInstaller.swift app/DayBudget.swift app/MobileCrypto.swift app/MobileSnapshot.swift app/MobileUploader.swift app/DailyInsights.swift app/Organizations.swift app/FirefoxCookies.swift \
-    app/LoanModels.swift app/LoanAttribution.swift app/LoanRules.swift app/ClaudeTranscripts.swift app/LoanPublishing.swift tests/loan_tests.swift tests/main.swift
+    app/LoanModels.swift app/LoanAttribution.swift app/LoanRules.swift app/ClaudeTranscripts.swift app/LoanPublishing.swift app/LoanRevocation.swift tests/loan_tests.swift tests/main.swift
 mv build/tests.new build/tests
 build/tests

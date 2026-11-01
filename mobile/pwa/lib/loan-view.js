@@ -56,3 +56,11 @@ export function guestBudget(view, now) {
   const days = Math.max((view.endsAt - now) / 86400000, 0);
   return { left, perDay: days >= 0.5 ? left / days : null, over: Math.max(view.guestUsed - view.sharePoints, 0) };
 }
+
+/** Vérification de la révocation après un prêt (champ `revocation` du snapshot) ; null si absente ou illisible. */
+export function revocationOf(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const endedAt = toDate(raw.endedAt), watchEndsAt = toDate(raw.watchEndsAt);
+  if (!endedAt || !watchEndsAt || !["watching", "clear", "suspicious"].includes(raw.phase)) return null;
+  return { guestName: String(raw.guestName ?? "").trim() || "l'invité", endedAt, watchEndsAt, phase: raw.phase, unexplained: number(raw.unexplained) ?? 0 };
+}

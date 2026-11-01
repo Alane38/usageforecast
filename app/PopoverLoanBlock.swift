@@ -72,3 +72,28 @@ struct LoanBlock: View {
         return parts.joined(separator: " · ")
     }
 }
+
+/// Ligne du popover après un prêt : la vérification de la révocation (48 h), en rouge si la semaine monte sans activité de ta part.
+struct RevocationLine: View {
+    @ObservedObject var usageManager: UsageManager
+
+    var body: some View {
+        if let watch = usageManager.revocationWatch, let status = usageManager.revocationStatus {
+            HStack(alignment: .top, spacing: 6) {
+                Circle().fill(color(status.phase)).frame(width: 7, height: 7).padding(.top, 4)
+                Text(LoanRevocation.summary(watch: watch, status: status, now: AppClock.now))
+                    .font(.system(size: 11, weight: status.phase == .suspicious ? .semibold : .regular))
+                    .foregroundColor(status.phase == .suspicious ? UsageTone.danger.color : Color.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func color(_ phase: RevocationStatus.Phase) -> Color {
+        switch phase {
+        case .suspicious: return UsageTone.danger.color
+        case .clear: return UsageTone.ok.color
+        case .watching: return Color.secondaryText
+        }
+    }
+}

@@ -73,6 +73,17 @@ async function claimInvite(env, id) {
   return new Response(blob, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", ...SECURITY } });
 }
 
+// Effacement d'un coffre (fin d'un prêt) : seul le détenteur du jeton d'écriture peut le faire. Un coffre absent est déjà effacé.
+async function remove(request, env, id) {
+  const token = request.headers.get("x-write-token") ?? "";
+  if (!TOKEN.test(token)) return json({ error: "jeton d'écriture invalide" }, 401);
+  const known = await env.VAULT.get(`auth:${id}`);
+  if (known && !sameHex(known, await sha256Hex(token))) return json({ error: "jeton refusé" }, 403);
+  await env.VAULT.delete(`blob:${id}`);
+  await env.VAULT.delete(`auth:${id}`);
+  return json({ ok: true });
+}
+
 async function get(env, id) {
   const { value, metadata } = await env.VAULT.getWithMetadata(`blob:${id}`);
   if (value === null) return json({ error: "coffre vide" }, 404);
@@ -95,7 +106,8 @@ export default {
       if (!ID.test(match[1])) return json({ error: "identifiant invalide" }, 400);
       if (request.method === "PUT") return put(request, env, match[1]);
       if (request.method === "GET") return get(env, match[1]);
-      return json({ error: "méthode non permise" }, 405, { allow: "GET, PUT" });
+      if (request.method === "DELETE") return remove(request, env, match[1]);
+      return json({ error: "méthode non permise" }, 405, { allow: "GET, PUT, DELETE" });
     }
     if (request.method !== "GET" && request.method !== "HEAD") return json({ error: "méthode non permise" }, 405);
     const asset = assetFor(url.pathname);

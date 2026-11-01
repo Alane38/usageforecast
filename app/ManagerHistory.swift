@@ -42,6 +42,7 @@ extension UsageManager {
         sendMobileSnapshotIfEnabled(now: date)
         refreshLoan(now: date)
         pollLoanCommands(now: date)
+        refreshRevocation(now: date)
     }
 
     /// La prévision courante, telle que la lisent le statusline de Claude Code et le téléphone.

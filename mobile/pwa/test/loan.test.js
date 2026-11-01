@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { controlPairing, decryptJson, newPairing, parsePairing } from "../lib/crypto.js";
 import { CODE_LENGTH, commandOf, endCommand, formatCode, inviteOf, inviteSecrets, newInviteCode, normalizeCode, prepareLoan, redeemInvite } from "../lib/loan.js";
-import { guestBudget, guestViewOf, loanInfoOf } from "../lib/loan-view.js";
+import { guestBudget, guestViewOf, loanInfoOf, revocationOf } from "../lib/loan-view.js";
 import { pull } from "../lib/sync.js";
 import worker from "../../relay/src/worker.js";
 import { createHmac } from "node:crypto";
@@ -138,3 +138,13 @@ describe("vecteurs croisés avec le Mac (tests/loan_tests.swift)", () => {
   });
 });
 
+
+describe("vérification de la révocation (snapshot du Mac)", () => {
+  test("lue telle que le Mac l'écrit ; phase inconnue ou dates manquantes : ignorée", () => {
+    const raw = { guestName: "Sam", endedAt: "2026-11-05T09:00:00Z", watchEndsAt: "2026-11-07T09:00:00Z", phase: "suspicious", unexplained: 3 };
+    expect(revocationOf(raw)).toMatchObject({ guestName: "Sam", phase: "suspicious", unexplained: 3 });
+    expect(revocationOf({ ...raw, phase: "autre" })).toBeNull();
+    expect(revocationOf({ ...raw, endedAt: null })).toBeNull();
+    expect(revocationOf(undefined)).toBeNull();
+  });
+});

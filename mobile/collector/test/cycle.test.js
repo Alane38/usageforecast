@@ -114,3 +114,37 @@ describe("un tour complet, jusqu'au relais", () => {
     expect(source).not.toMatch(/v1\.[0-9a-f]{32}\./);
   });
 });
+
+describe("fin du prêt vue par le collecteur", () => {
+  const VIEW = { id: "fedcba9876543210fedcba9876543210", key: KEY };
+  const withView = { ...PAIRING, view: VIEW };
+
+  async function publishView(fetchImpl, active) {
+    const { sealJson, writeToken } = await import("../lib/seal.js");
+    await fetchImpl(`${PAIRING.relay}/v1/${VIEW.id}`, { method: "PUT", headers: { "x-write-token": await writeToken(KEY) }, body: await sealJson({ kind: "guest-view", version: 1, active }, KEY) });
+  }
+
+  test("le Mac publie « prêt terminé » : le collecteur n'envoie plus rien et ne recrée pas le coffre effacé", async () => {
+    writeFileSync(join(root, "s.jsonl"), `${assistantLine()}\n`);
+    const { store, fetchImpl } = relay();
+    await publishView(fetchImpl, false);
+    const state = emptyState();
+    const result = await runCycle(options({ state, fetchImpl, pairing: withView }));
+    expect(result.ended).toBe(true);
+    expect(state.loanEnded).toBe(true);
+    expect(store.has(`blob:${PAIRING.id}`)).toBe(false);
+    expect((await runCycle(options({ state, fetchImpl, pairing: withView, now: NOW + 3_600_000 }))).ended).toBe(true);
+  });
+
+  test("prêt en cours, vue absente ou relais injoignable : le collecteur continue (seule une preuve arrête)", async () => {
+    writeFileSync(join(root, "s.jsonl"), `${assistantLine()}\n`);
+    const { fetchImpl } = relay();
+    await publishView(fetchImpl, true);
+    expect((await runCycle(options({ state: emptyState(), fetchImpl, pairing: withView }))).sent).toBe(true);
+    const fresh = relay();
+    expect((await runCycle(options({ state: emptyState(), fetchImpl: fresh.fetchImpl, pairing: withView }))).sent).toBe(true);
+    let calls = 0;
+    const flaky = async (url, init) => (++calls === 1 ? Promise.reject(new Error("hors ligne")) : fresh.fetchImpl(url, init));
+    expect((await runCycle(options({ state: emptyState(), fetchImpl: flaky, pairing: withView }))).sent).toBe(true);
+  });
+});

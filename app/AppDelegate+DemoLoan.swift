@@ -21,3 +21,16 @@ extension AppDelegate {
         usageManager.updatePercentages()
     }
 }
+
+extension AppDelegate {
+    /// `--demo --demo-revocation [watching|clear|suspicious]` : l'après-prêt, sans réseau ni journaux.
+    func fillDemoRevocation() {
+        let now = AppClock.now
+        let phase = RevocationStatus.Phase(rawValue: Snapshot.option("--demo-revocation") ?? "") ?? .watching
+        let endedAt = phase == .clear ? now.addingTimeInterval(-50 * 3600) : now.addingTimeInterval(-2 * 3600 - 600)
+        let watch = RevocationWatch(endedAt: endedAt, guestName: "Sam")
+        usageManager.loan = nil
+        usageManager.revocationWatch = watch
+        usageManager.revocationStatus = RevocationStatus(phase: phase, unexplained: phase == .suspicious ? 3 : 0, ownerPoints: 1, watchEndsAt: watch.watchEndsAt)
+    }
+}
