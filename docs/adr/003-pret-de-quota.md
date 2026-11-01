@@ -45,8 +45,10 @@ Faits établis (vérifiés le 1er novembre 2026) :
    15 minutes (96). Total au pire ≈ 530 sur 1 000.
 7. **Même chiffrement que l'ADR 002** : un coffre par collecteur, AES-256-GCM, jeton d'écriture `HMAC-SHA256(clé, "usageforecast/write")`,
    lien `v1.<id>.<clé>`. Le relais ne voit toujours que du texte chiffré.
-8. **Quatrième canal de livraison**, séparé des trois autres : le collecteur a ses releases `collector-vX.Y.Z` (exécutables + SHA-256).
-   Il ne fait jamais proposer de mise à jour au Mac ni à l'APK.
+8. **Quatrième canal de livraison**, séparé des trois autres : le collecteur a ses releases `collector-vX.Y.Z` (exécutables + SHA-256),
+   publiées par `.github/workflows/release-collector.yml` au push du tag (version du tag vérifiée contre `collector.js`, notes tirées de
+   `mobile/collector/CHANGELOG.md`, release jamais marquée « Latest »). Il ne fait jamais proposer de mise à jour au Mac ni à l'APK
+   (testé dans `tests/main.swift`).
 
 ## Étapes
 1. **Collecteur** (ce changement) : lecture incrémentale et dédoublonnée des journaux, tranches de 5 minutes, chiffrement, politique d'envoi,

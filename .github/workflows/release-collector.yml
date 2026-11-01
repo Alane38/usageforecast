@@ -1,0 +1,76 @@
+name: Release du collecteur
+
+# Quatrième canal de livraison (ADR 003) : les exécutables du collecteur de l'invité, à chaque tag collector-vX.Y.Z.
+# Séparé des autres : release.yml ne réagit qu'aux tags v*, l'app Mac ignore collector-v… (version non numérique),
+# l'APK ne lit que android-v…, install.sh et le site que vX.Y.Z. La release n'est jamais marquée « Latest ».
+on:
+  push:
+    tags: ["collector-v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag existant à publier (ex. collector-v0.3.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+
+      - name: Tag et version
+        run: |
+          TAG="${{ inputs.tag || github.ref_name }}"
+          VERSION="${TAG#collector-v}"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Tag invalide : $TAG (attendu collector-vX.Y.Z)"; exit 1; }
+          SOURCE=$(sed -n 's/^export const VERSION = "\(.*\)";$/\1/p' mobile/collector/collector.js)
+          [ "$SOURCE" = "$VERSION" ] || { echo "Le tag dit $VERSION, collector.js dit $SOURCE : lance scripts/bump-collector.sh $VERSION"; exit 1; }
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Tests (collecteur, relais, application mobile)
+        working-directory: mobile
+        run: bun test
+
+      - name: Compilation (5 plateformes) et empreintes
+        working-directory: mobile
+        run: bun scripts/build-collector.mjs
+
+      - name: Essai de l'exécutable Linux
+        working-directory: mobile/collector/dist
+        run: |
+          ./usageforecast-collecteur-linux-x64 aide | grep -q "Collecteur UsageForecast $VERSION"
+          # Machine vierge : aucun journal Claude Code, aucune association. Le collecteur doit le dire sans planter.
+          HOME="$RUNNER_TEMP/vierge" XDG_CONFIG_HOME="$RUNNER_TEMP/vierge/.config" ./usageforecast-collecteur-linux-x64 une-fois --essai | tee essai.txt
+          grep -q "0 nouvelle(s) réponse(s)" essai.txt
+          rm essai.txt
+          sha256sum -c SHA256SUMS
+
+      - name: Notes de version
+        run: |
+          awk -v v="$VERSION" '$0 ~ "^## "v"( |$)" {on=1; next} /^## / {on=0} on' mobile/collector/CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "Pas de section « ## $VERSION » dans mobile/collector/CHANGELOG.md"; exit 1; }
+          cat >> notes.md <<'EOF'
+
+          ### Installer
+          Télécharge l'exécutable de ta machine, vérifie-le avec `SHA256SUMS`, puis : `collecteur associer <adresse du relais> <CODE>`
+          et `collecteur demarrage-auto`. Windows : SmartScreen demande « Exécuter quand même » (exécutable non signé). macOS :
+          `xattr -d com.apple.quarantine usageforecast-collecteur-macos-arm64` avant le premier lancement. Voir mobile/collector/README.md.
+          EOF
+
+      - name: Publier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "La release $TAG existe déjà : rien à publier."; exit 0; fi
+          cd mobile/collector/dist
+          gh release create "$TAG" usageforecast-collecteur-* SHA256SUMS --title "Collecteur UsageForecast $VERSION" \
+            --notes-file "$GITHUB_WORKSPACE/notes.md" --latest=false

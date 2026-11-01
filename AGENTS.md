@@ -39,8 +39,9 @@ utilisent une **horloge figée** (`AppClock`) : le rendu est identique tous les 
   - **Application Mac** : `scripts/bump-version.sh X.Y.Z`, tag `vX.Y.Z`, workflow `release.yml` (zip + SHA-256). Seule cette série compte pour le Mac et pour `docs/install.sh`.
   - **APK Android** : `scripts/bump-android.sh X.Y.Z` (version dans `android/version.properties`, indépendante du Mac), commit et push, puis `scripts/release-android.sh` : release `android-vX.Y.Z`. L'APK ne lit que cette série.
   - **Application mobile (PWA)** : `cd mobile && bun scripts/deploy-relay.mjs`. **Aucune release, aucun numéro de version.**
-  - **Collecteur** : version dans `mobile/collector/collector.js` (`VERSION`), `bun run build:collector`, release `collector-vX.Y.Z` (exécutables + `SHA256SUMS`).
-    Workflow de release pas encore écrit.
+  - **Collecteur** : `scripts/bump-collector.sh X.Y.Z` (version dans `mobile/collector/collector.js`), section dans `mobile/collector/CHANGELOG.md`,
+    commit et push, puis `git tag -a collector-vX.Y.Z -m` et push du tag : le workflow `release-collector.yml` teste, compile les 5 exécutables,
+    les essaie et publie la release (jamais marquée « Latest »). Le Mac, l'APK, `install.sh` et le site ignorent cette série.
   - Les séries se lisent dans la **liste** des releases GitHub, jamais via `releases/latest`.
 - **Trousseau** : une demande de mot de passe par mise à jour (un seul élément `secret_bundle`). **Après une installation, ne lancer aucun autre processus qui lit
   le trousseau** (diagnostic, capture) avant que l'utilisateur ait validé : chaque processus redemande.
