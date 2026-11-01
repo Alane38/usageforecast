@@ -2,6 +2,15 @@
 
 Format : une section par version, la plus récente en haut.
 
+## Prochaine version (non publiée)
+
+### Ajouté
+- **Prêt de quota** (ADR 003, étape 2 côté Mac). Réglages › **Prêt** : prêter une part de la limite hebdomadaire à une autre personne (curseur de 10 à 90 %, fin du prêt par défaut au prochain reset), en collant le lien affiché par son collecteur (`mobile/collector`, Windows, Linux ou macOS). Le popover montre un bloc « Prêt » : part de l'invité et ta réserve, prévision d'épuisement, provenance des chiffres (mesurés ou estimés) et fraîcheur du collecteur.
+- **Attribution** : chaque hausse de la semaine va à celui qui utilisait Claude Code (journaux de ce Mac et rapport chiffré du collecteur) ; aux deux, au prorata des tokens (hors lecture du cache), estimé ; à personne, à l'invité, estimé. La baisse du reset n'est jamais comptée.
+- **Alertes du prêt** : 80 % de sa part, dépassement prévu avant la fin du prêt, réserve entamée, collecteur muet depuis plus de 7 h. Chaque texte dit la limite, l'échéance et l'hypothèse.
+- Aperçu : `--demo --demo-loan` (options `--loan-guest`, `--loan-owner`, `--loan-silent`).
+- Tests : 29 nouveaux (rapport du collecteur lu et déchiffré tel que le JavaScript le produit, attribution, règles, journaux).
+
 ## 1.19.1 : 30 octobre 2026
 
 ### Corrigé

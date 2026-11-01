@@ -70,6 +70,11 @@ struct PopoverView: View {
             case .gauges: GaugesLayout(usageManager: usageManager)
             case .cards: CardsLayout(usageManager: usageManager)
             }
+            if usageManager.loan != nil {
+                Divider()
+                LoanBlock(usageManager: usageManager)
+                Divider()
+            }
             WeekPlanDisclosure(usageManager: usageManager)
             HistoryDisclosure(usageManager: usageManager)
             ModelDetails(usageManager: usageManager)

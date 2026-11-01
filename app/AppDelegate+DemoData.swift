@@ -9,6 +9,7 @@ extension AppDelegate {
         fillDemoMobileSync()
         fillDemoHistory()
         fillDemoConsoleBalance()
+        if DevFlags.isSet("--demo-loan") { fillDemoLoan() }
     }
 
     /// Horloge figée au 19/10/2026 à 12 h (Paris) : dates, jours du planning et décomptes identiques chaque jour.

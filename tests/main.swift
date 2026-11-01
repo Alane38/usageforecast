@@ -818,4 +818,6 @@ let wideGrey = PlanLabels.place(texts: ["avant auj.", "auj."], blockWidths: [90,
 check(wideGrey.map(\.index) == [0, 1], "étiquettes : un bloc gris assez large garde « avant auj. »")
 check(PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).isEmpty || PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).allSatisfy { $0.centerX >= 0 }, "étiquettes : blocs minuscules sans plantage")
 
+runLoanTests()
+
 exit(failures == 0 ? 0 : 1)

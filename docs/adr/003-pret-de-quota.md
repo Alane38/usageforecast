@@ -52,6 +52,9 @@ Faits établis (vérifiés le 1er novembre 2026) :
 1. **Collecteur** (ce changement) : lecture incrémentale et dédoublonnée des journaux, tranches de 5 minutes, chiffrement, politique d'envoi,
    commandes `associer`, `une-fois`, `lancer`, `etat`, compilation multiplateforme. Association par lien `v1.<id>.<clé>` en attendant le code court.
 2. Mac : lecture du coffre de l'invité, attribution (logique pure testée), bloc « Prêt » du popover, onglet Réglages › Prêt, alertes.
+   Fait : `LoanModels`, `LoanAttribution`, `LoanRules`, `ClaudeTranscripts` (journaux de ce Mac, mêmes règles que le collecteur),
+   `UsageManager+Loan`, `PopoverLoanBlock`, `SettingsLoanTab`. Le prêt démarre en collant le lien affiché par le collecteur.
+   Pas encore : détection de l'usage de claude.ai par Alane (aujourd'hui, une hausse sans activité Claude Code est comptée à l'invité, estimée).
 3. Relais et PWA : code d'invitation court à usage unique (15 min), coffre de contrôle pour créer un prêt depuis le téléphone, vue de
    l'invité, onglet Prêt.
 4. Révocation vérifiée et fin de prêt (effacement du coffre : nouvelle route `DELETE` du relais, protégée par le jeton d'écriture).

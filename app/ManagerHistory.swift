@@ -40,6 +40,7 @@ extension UsageManager {
         // Résumé de la journée : toutes les 10 minutes suffit.
         if lastDailyUpdate.map({ date.timeIntervalSince($0) >= 600 }) ?? true { refreshDailySummaries(from: historySamples) }
         sendMobileSnapshotIfEnabled(now: date)
+        refreshLoan(now: date)
     }
 
     /// La prévision courante, telle que la lisent le statusline de Claude Code et le téléphone.
