@@ -11,6 +11,10 @@ enum AppSecrets {
     /// Synchro mobile : identifiant du coffre sur le relais et clé de chiffrement du téléphone.
     static let mobileIDAccount = "mobile_id"
     static let mobileKeyAccount = "mobile_cipher"
+    /// Prêt de quota : clé du coffre où le collecteur de l'invité dépose son activité.
+    static let loanKeyAccount = "loan_cipher"
+    /// Clé du coffre de lecture de l'invité, où le Mac publie sa vue.
+    static let loanViewKeyAccount = "loan_view_cipher"
 
     #if RELEASE
     static let isRelease = true

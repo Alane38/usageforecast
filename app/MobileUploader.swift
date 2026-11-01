@@ -48,6 +48,16 @@ enum MobileUploader {
         return put
     }
 
+    /// Effacement d'un coffre (fin d'un prêt) : `DELETE /v1/<id>` avec le jeton d'écriture.
+    static func deleteRequest(relay: URL, id: String, token: String) -> URLRequest? {
+        guard let url = endpoint(relay: relay, id: id) else { return nil }
+        var delete = URLRequest(url: url)
+        delete.httpMethod = "DELETE"
+        delete.setValue(token, forHTTPHeaderField: "X-Write-Token")
+        delete.timeoutInterval = 20
+        return delete
+    }
+
     /// Message lisible pour la fenêtre des Réglages.
     static func describe(status: Int?, error: Error?, bytes: Int) -> Outcome {
         guard let status else {

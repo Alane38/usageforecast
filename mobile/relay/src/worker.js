@@ -7,6 +7,9 @@ const ID = /^[0-9a-f]{32}$/;
 const TOKEN = /^[0-9a-f]{64}$/;
 export const MAX_BLOB_BYTES = 256 * 1024;
 export const TTL_SECONDS = 60 * 60 * 24 * 30;
+/** Invitations de prêt (ADR 003) : 15 minutes, une seule lecture, quelques kilo-octets. */
+export const INVITE_TTL_SECONDS = 15 * 60;
+export const MAX_INVITE_BYTES = 8 * 1024;
 
 const SECURITY = {
   "x-content-type-options": "nosniff",
@@ -53,6 +56,34 @@ async function put(request, env, id) {
   return json({ ok: true, bytes: blob.length });
 }
 
+// Une invitation est déposée chiffrée (clé tirée du code, que le relais ne voit jamais) et ne peut être retirée qu'une fois.
+async function putInvite(request, env, id) {
+  const blob = await request.text();
+  if (blob.length === 0 || blob.length > MAX_INVITE_BYTES) return json({ error: "taille invalide" }, 413);
+  if (!/^[A-Za-z0-9_-]+$/.test(blob)) return json({ error: "format invalide" }, 400);
+  if (await env.VAULT.get(`invite:${id}`)) return json({ error: "invitation déjà déposée" }, 409);
+  await env.VAULT.put(`invite:${id}`, blob, { expirationTtl: INVITE_TTL_SECONDS });
+  return json({ ok: true });
+}
+
+async function claimInvite(env, id) {
+  const blob = await env.VAULT.get(`invite:${id}`);
+  if (blob === null) return json({ error: "invitation inconnue, utilisée ou expirée" }, 404);
+  await env.VAULT.delete(`invite:${id}`);
+  return new Response(blob, { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store", ...SECURITY } });
+}
+
+// Effacement d'un coffre (fin d'un prêt) : seul le détenteur du jeton d'écriture peut le faire. Un coffre absent est déjà effacé.
+async function remove(request, env, id) {
+  const token = request.headers.get("x-write-token") ?? "";
+  if (!TOKEN.test(token)) return json({ error: "jeton d'écriture invalide" }, 401);
+  const known = await env.VAULT.get(`auth:${id}`);
+  if (known && !sameHex(known, await sha256Hex(token))) return json({ error: "jeton refusé" }, 403);
+  await env.VAULT.delete(`blob:${id}`);
+  await env.VAULT.delete(`auth:${id}`);
+  return json({ ok: true });
+}
+
 async function get(env, id) {
   const { value, metadata } = await env.VAULT.getWithMetadata(`blob:${id}`);
   if (value === null) return json({ error: "coffre vide" }, 404);
@@ -64,12 +95,19 @@ async function get(env, id) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const invite = url.pathname.match(/^\/v1\/invite\/([0-9a-f]{32})(\/claim)?$/);
+    if (invite) {
+      if (!invite[2] && request.method === "PUT") return putInvite(request, env, invite[1]);
+      if (invite[2] && request.method === "POST") return claimInvite(env, invite[1]);
+      return json({ error: "méthode non permise" }, 405, { allow: invite[2] ? "POST" : "PUT" });
+    }
     const match = url.pathname.match(/^\/v1\/([^/]+)$/);
     if (match) {
       if (!ID.test(match[1])) return json({ error: "identifiant invalide" }, 400);
       if (request.method === "PUT") return put(request, env, match[1]);
       if (request.method === "GET") return get(env, match[1]);
-      return json({ error: "méthode non permise" }, 405, { allow: "GET, PUT" });
+      if (request.method === "DELETE") return remove(request, env, match[1]);
+      return json({ error: "méthode non permise" }, 405, { allow: "GET, PUT, DELETE" });
     }
     if (request.method !== "GET" && request.method !== "HEAD") return json({ error: "méthode non permise" }, 405);
     const asset = assetFor(url.pathname);

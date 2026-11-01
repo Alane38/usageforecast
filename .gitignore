@@ -9,3 +9,4 @@ android/local.properties
 android/.gradle/
 android/local.properties
 android/.kotlin/
+mobile/collector/dist/

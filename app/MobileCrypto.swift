@@ -31,6 +31,14 @@ enum MobileCrypto {
     }
 
     /// Jeton qui prouve qu'on est l'écrivain du coffre : HMAC de la clé, que le téléphone peut aussi recalculer mais qui ne dévoile pas la clé.
+    /// Coffre de contrôle (prêt de quota, ADR 003) dérivé de l'appairage mobile : identifiant = 16 premiers octets de
+    /// HMAC(clé, "usageforecast/control"), clé = HMAC(clé, "usageforecast/control-key"). Mêmes calculs que `controlPairing` de mobile/pwa/lib/crypto.js.
+    static func controlVault(for key: SymmetricKey) -> (id: String, key: SymmetricKey) {
+        let id = HMAC<SHA256>.authenticationCode(for: Data("usageforecast/control".utf8), using: key)
+        let derived = HMAC<SHA256>.authenticationCode(for: Data("usageforecast/control-key".utf8), using: key)
+        return (Data(id).prefix(16).map { String(format: "%02x", $0) }.joined(), SymmetricKey(data: Data(derived)))
+    }
+
     static func writeToken(key: SymmetricKey) -> String {
         let mac = HMAC<SHA256>.authenticationCode(for: Data("usageforecast/write".utf8), using: key)
         return mac.map { String(format: "%02x", $0) }.joined()

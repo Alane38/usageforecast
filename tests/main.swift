@@ -803,6 +803,7 @@ func releaseJSON(_ tag: String, draft: Bool = false) -> String {
 let listWithAndroid = Data("[\(releaseJSON("android-v1.18.8")),\(releaseJSON("v1.18.7")),\(releaseJSON("v1.19.0", draft: true)),\(releaseJSON("v1.18.9")),\(releaseJSON("android-v9.9.9"))]".utf8)
 check(UpdateChecker.parseList(listWithAndroid)?.version == "1.18.9", "mise à jour Mac : la plus récente des releases v…, sans les android-v… ni les brouillons")
 check(UpdateChecker.parseList(Data("[\(releaseJSON("android-v1.18.8"))]".utf8)) == nil, "mise à jour Mac : une liste sans release du Mac -> rien")
+check(UpdateChecker.parseList(Data("[\(releaseJSON("collector-v9.9.9")),\(releaseJSON("v1.18.7"))]".utf8))?.version == "1.18.7", "mise à jour Mac : une release du collecteur (collector-v…) n'est jamais proposée au Mac")
 check(UpdateChecker.parse(Data(releaseJSON("android-v1.18.8").utf8)) == nil, "mise à jour Mac : un tag android-v… n'est pas une release du Mac")
 check(UpdateChecker.parseList(Data("pas du json".utf8)) == nil && UpdateChecker.parseList(Data("[]".utf8)) == nil, "mise à jour Mac : réponse vide ou illisible -> rien")
 
@@ -817,5 +818,7 @@ check(placedLabels.map(\.index) == [1, 2, 3, 4, 5, 6], "étiquettes : un jour pa
 let wideGrey = PlanLabels.place(texts: ["avant auj.", "auj."], blockWidths: [90, 60], gap: 2)
 check(wideGrey.map(\.index) == [0, 1], "étiquettes : un bloc gris assez large garde « avant auj. »")
 check(PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).isEmpty || PlanLabels.place(texts: ["a", "b"], blockWidths: [3, 3], gap: 2).allSatisfy { $0.centerX >= 0 }, "étiquettes : blocs minuscules sans plantage")
+
+runLoanTests()
 
 exit(failures == 0 ? 0 : 1)
