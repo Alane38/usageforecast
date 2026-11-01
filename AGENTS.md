@@ -7,8 +7,9 @@ budget du jour, statistiques, historique local et **synchro chiffrée vers une a
 
 - `app/*.swift` : l'application, un fichier par responsabilité, **chacun sous 200 lignes**. Logique pure (testable) séparée des vues.
 - `tests/main.swift` : tests de la logique pure (compilés sans UI, via `scripts/test.sh`). `tests/visual/ref/` : références d'écrans.
-- `mobile/` : application mobile `pwa/` (HTML/CSS/JS, sans build), relais `relay/` (Cloudflare Worker), `scripts/`. Voir `mobile/README.md`.
-- `docs/adr/` : décisions d'architecture (001 secrets, 002 application mobile). `CHANGELOG.md` : une section par version.
+- `mobile/` : application mobile `pwa/` (HTML/CSS/JS, sans build), relais `relay/` (Cloudflare Worker), collecteur `collector/` (invité d'un prêt de quota,
+  Windows / Linux / macOS, ADR 003), `scripts/`. Voir `mobile/README.md` et `mobile/collector/README.md`.
+- `docs/adr/` : décisions d'architecture (001 secrets, 002 application mobile, 003 prêt de quota et collecteur). `CHANGELOG.md` : une section par version.
 
 ## Commandes
 
@@ -21,10 +22,11 @@ budget du jour, statistiques, historique local et **synchro chiffrée vers une a
 cd mobile && bun test             # tests JavaScript (chiffrement, statistiques, relais)
 cd mobile && bun run dev          # relais local + application sur http://localhost:8788 ; bun run seed pour des données
 cd mobile && bun run deploy       # publie le relais sur Cloudflare (idempotent ; --dry-run pour voir les étapes)
+cd mobile && bun run build:collector  # exécutables du collecteur (5 plateformes) + SHA256SUMS dans collector/dist
 ```
 
 Options de l'app pour vérifier sans cliquer : `--snapshot fichier.png` avec `--demo`, `--light`, `--layout gauges|cards`, `--settings --tab <onglet>`,
-`--demo-mobile`, `--show-code`, `--used-today N`, `--demo-days N`, `--demo-update`, `--time`, `--bench-chart N`, `--diagnose`. Les captures de démonstration
+`--demo-mobile`, `--demo-loan` (avec `--loan-guest N`, `--loan-owner N`, `--loan-silent`), `--demo-revocation watching|clear|suspicious`, `--show-code`, `--used-today N`, `--demo-days N`, `--demo-update`, `--time`, `--bench-chart N`, `--diagnose`. Les captures de démonstration
 utilisent une **horloge figée** (`AppClock`) : le rendu est identique tous les jours.
 
 ## Règles du projet
@@ -33,11 +35,14 @@ utilisent une **horloge figée** (`AppClock`) : le rendu est identique tous les 
   alerte, peu de données, vide, hors ligne. Un seul cas « normal » ne suffit pas.
 - **Zéro avertissement** de compilation ; tout changement de logique a son test ; un outil de vérification se vérifie lui-même (contrôle négatif).
 - **Flux de livraison** : bump, section du `CHANGELOG.md`, `test.sh`, `release.sh`, installation (`trash` l'ancienne app puis `ditto`), commit, `git tag -a vX.Y.Z -m`, push.
-- **Trois canaux de livraison, jamais mélangés** (sinon l'application Mac propose une mise à jour pour un simple correctif du téléphone) :
+- **Quatre canaux de livraison, jamais mélangés** (sinon l'application Mac propose une mise à jour pour un simple correctif du téléphone) :
   - **Application Mac** : `scripts/bump-version.sh X.Y.Z`, tag `vX.Y.Z`, workflow `release.yml` (zip + SHA-256). Seule cette série compte pour le Mac et pour `docs/install.sh`.
   - **APK Android** : `scripts/bump-android.sh X.Y.Z` (version dans `android/version.properties`, indépendante du Mac), commit et push, puis `scripts/release-android.sh` : release `android-vX.Y.Z`. L'APK ne lit que cette série.
   - **Application mobile (PWA)** : `cd mobile && bun scripts/deploy-relay.mjs`. **Aucune release, aucun numéro de version.**
-  - Les deux séries se lisent dans la **liste** des releases GitHub, jamais via `releases/latest`.
+  - **Collecteur** : `scripts/bump-collector.sh X.Y.Z` (version dans `mobile/collector/collector.js`), section dans `mobile/collector/CHANGELOG.md`,
+    commit et push, puis `git tag -a collector-vX.Y.Z -m` et push du tag : le workflow `release-collector.yml` teste, compile les 5 exécutables,
+    les essaie et publie la release (jamais marquée « Latest »). Le Mac, l'APK, `install.sh` et le site ignorent cette série.
+  - Les séries se lisent dans la **liste** des releases GitHub, jamais via `releases/latest`.
 - **Trousseau** : une demande de mot de passe par mise à jour (un seul élément `secret_bundle`). **Après une installation, ne lancer aucun autre processus qui lit
   le trousseau** (diagnostic, capture) avant que l'utilisateur ait validé : chaque processus redemande.
 - **Secrets** : jamais dans le dépôt, les journaux ni les captures. La synchro mobile est **désactivée par défaut** ; le relais ne voit que du texte chiffré.

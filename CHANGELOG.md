@@ -2,6 +2,20 @@
 
 Format : une section par version, la plus récente en haut.
 
+## 1.20.0 : 1er novembre 2026
+
+### Ajouté
+- **Prêt de quota** (ADR 003, étape 2 côté Mac). Réglages › **Prêt** : prêter une part de la limite hebdomadaire à une autre personne (curseur de 10 à 90 %, fin du prêt par défaut au prochain reset), en collant le lien affiché par son collecteur (`mobile/collector`, Windows, Linux ou macOS). Le popover montre un bloc « Prêt » : part de l'invité et ta réserve, prévision d'épuisement, provenance des chiffres (mesurés ou estimés) et fraîcheur du collecteur.
+- **Attribution** : chaque hausse de la semaine va à celui qui utilisait Claude Code (journaux de ce Mac et rapport chiffré du collecteur) ; aux deux, au prorata des tokens (hors lecture du cache), estimé ; à personne, à l'invité, estimé. La baisse du reset n'est jamais comptée.
+- **Alertes du prêt** : 80 % de sa part, dépassement prévu avant la fin du prêt, réserve entamée, collecteur muet depuis plus de 7 h. Chaque texte dit la limite, l'échéance et l'hypothèse.
+- **Prêt créé depuis le téléphone** (étape 3) : onglet **Prêt** de l'application mobile, avec un code d'invitation de 8 caractères valable 15 minutes et une seule fois ; l'invité le saisit dans son collecteur (`collecteur associer <relais> <CODE>`). Le Mac reçoit le prêt par un coffre de contrôle chiffré et le prend en charge dans les 5 minutes ; il termine aussi un prêt demandé depuis le téléphone.
+- **Vue de l'invité** : son collecteur affiche le lien de son tableau de bord (l'application mobile) avec sa part, ce qu'il lui reste, le rythme conseillé, la réserve du propriétaire et ses jours. Publiée par le Mac au plus toutes les 15 minutes, et une dernière fois à la fin (« Prêt terminé »).
+- **Révocation vérifiée** (étape 4) : à la fin d'un prêt, le Mac efface le coffre de l'invité sur le relais et surveille la semaine pendant 48 h. À partir de 2 points pris sans Claude Code sur ce Mac : alerte « Activité inexpliquée après la fin du prêt » (toujours active), avec le chemin pour tout déconnecter sur claude.ai. Affichée dans le popover, Réglages › Prêt et l'onglet Prêt du téléphone.
+- **Collecteur 0.3.0** : s'arrête seul quand le prêt est terminé ; `collecteur demarrage-auto` le lance à chaque ouverture de session (Linux, macOS, Windows), `demarrage-auto retirer` l'enlève.
+- **Release du collecteur** : workflow `release-collector.yml` (tag `collector-vX.Y.Z`) et `scripts/bump-collector.sh` ; journal propre dans `mobile/collector/CHANGELOG.md`. Le Mac ignore cette série (test ajouté).
+- Aperçu : `--demo --demo-revocation [watching|clear|suspicious]`, et `--demo --demo-loan` (options `--loan-guest`, `--loan-owner`, `--loan-silent`).
+- Tests : 41 en Swift (rapport du collecteur et commande du téléphone lus tels que le JavaScript les produit, attribution par jour, vue de l'invité, coffre de contrôle) et 15 en JavaScript (code, relais, vecteurs croisés).
+
 ## 1.19.2 : 1er novembre 2026
 
 ### Corrigé

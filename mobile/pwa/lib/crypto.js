@@ -55,3 +55,44 @@ export async function decryptJson(blob, keyB64url) {
     return null;
   }
 }
+
+// --- Écriture (téléphone et collecteur) : mêmes formats que app/MobileCrypto.swift. ---
+
+function keyBytesOf(keyB64url) {
+  const bytes = b64urlToBytes(keyB64url);
+  if (!bytes || bytes.length !== 32) throw new Error("clé d'association invalide");
+  return bytes;
+}
+
+export async function sealJson(object, keyB64url, nonce = crypto.getRandomValues(new Uint8Array(12))) {
+  const key = await crypto.subtle.importKey("raw", keyBytesOf(keyB64url), "AES-GCM", false, ["encrypt"]);
+  const sealed = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, new TextEncoder().encode(JSON.stringify(object))));
+  return bytesToB64url(new Uint8Array([...nonce, ...sealed]));
+}
+
+/** HMAC-SHA256 d'un libellé avec une clé de 32 octets (base64url). */
+export async function hmac(keyB64url, label) {
+  const key = await crypto.subtle.importKey("raw", keyBytesOf(keyB64url), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(label)));
+}
+
+const hex = (bytes) => [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+
+/** Jeton d'écriture d'un coffre : `HMAC-SHA256(clé, "usageforecast/write")` en hexadécimal, comme MobileCrypto.writeToken. */
+export async function writeToken(keyB64url) {
+  return hex(await hmac(keyB64url, "usageforecast/write"));
+}
+
+/** Nouveau coffre : identifiant de 128 bits en hexadécimal et clé de 256 bits en base64url. */
+export function newPairing() {
+  return { id: hex(crypto.getRandomValues(new Uint8Array(16))), key: bytesToB64url(crypto.getRandomValues(new Uint8Array(32))) };
+}
+
+/**
+ * Coffre de contrôle du téléphone vers le Mac (prêt créé ou terminé depuis le téléphone), dérivé de l'appairage existant :
+ * les deux côtés le retrouvent sans rien échanger de plus. Identifiant : 16 premiers octets de HMAC(clé, "usageforecast/control") ;
+ * clé : HMAC(clé, "usageforecast/control-key").
+ */
+export async function controlPairing(pairing) {
+  return { id: hex((await hmac(pairing.key, "usageforecast/control")).slice(0, 16)), key: bytesToB64url(await hmac(pairing.key, "usageforecast/control-key")) };
+}

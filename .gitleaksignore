@@ -1,0 +1,3 @@
+# vecteur de test factice (clé publique de test 0x00…0x1f) dans une chaîne multiligne : un commentaire casserait le test
+tests/loan_tests.swift:generic-api-key:88
+tests/loan_tests.swift:generic-api-key:88

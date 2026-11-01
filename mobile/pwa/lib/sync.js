@@ -1,6 +1,7 @@
 // Récupération du snapshot chiffré sur le relais, déchiffrement et validation. Ne lève jamais d'exception : retourne un statut lisible.
 import { decryptJson } from "./crypto.js";
 import { normalize } from "./snapshot.js";
+import { guestViewOf } from "./loan-view.js";
 
 export const POLL_SECONDS = 60;
 export const MAX_POLL_SECONDS = 600;
@@ -28,7 +29,8 @@ export async function pull({ pairing, previousStamp = null, fetchImpl = globalTh
 
   const raw = await decryptJson(await response.text(), pairing.key);
   if (!raw) return { status: "invalid", message: "Impossible de déchiffrer les données : la clé ne correspond plus. Réassocie cet appareil depuis le Mac." };
-  const snapshot = normalize(raw);
+  // Coffre de lecture d'un invité (prêt de quota) : une vue réduite au lieu du snapshot complet du Mac.
+  const snapshot = raw.kind === "guest-view" ? guestViewOf(raw) : normalize(raw);
   if (!snapshot) return { status: "invalid", message: "Format de données non reconnu : mets à jour cette application ou celle du Mac." };
   return { status: "updated", snapshot, raw, stamp };
 }

@@ -75,3 +75,10 @@ Côté Mac : `app/MobileSnapshot.swift` (format), `MobileCrypto.swift`, `MobileU
 | « Impossible de déchiffrer » | La clé a changé (Réassocier) : rescanne le code |
 | « Ce coffre est lié à une autre clé » (sur le Mac) | Le coffre a été créé avec une autre clé : clique « Réassocier » |
 | Données « anciennes » | Le Mac est en veille ou UsageForecast est fermé : le téléphone ne peut afficher que ce que le Mac a envoyé |
+
+## Prêter une part de ta semaine (ADR 003)
+
+Onglet **Prêt** : prénom, part (10 à 90 %), fin du prêt, puis « Créer le code d'invitation ». Le code (8 caractères, 15 minutes, une
+seule fois) se donne à la personne, qui le saisit dans son collecteur (`mobile/collector`). Ton Mac reçoit le prêt dans les 5 minutes
+par un coffre de contrôle chiffré et calcule qui consomme quoi ; la personne voit sa part dans sa propre vue de l'application.
+Le relais garde l'invitation chiffrée par une clé tirée du code (PBKDF2) : il ne voit ni le code, ni les conditions du prêt.
