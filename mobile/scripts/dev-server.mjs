@@ -10,6 +10,7 @@ const VAULT = {
   async get(key) { return store.get(key)?.value ?? null; },
   async getWithMetadata(key) { const entry = store.get(key); return { value: entry?.value ?? null, metadata: entry?.metadata ?? null }; },
   async put(key, value, options = {}) { store.set(key, { value, metadata: options.metadata }); },
+  async delete(key) { store.delete(key); },
 };
 
 const port = Number(process.argv[2] ?? 8788);

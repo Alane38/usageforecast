@@ -1,3 +1,5 @@
+import { loanInfoOf } from "./loan-view.js";
+
 // Validation du snapshot déchiffré. Une donnée inattendue ne doit jamais casser l'écran : on la refuse ou on la nettoie ici.
 
 export const SUPPORTED_VERSION = 1;
@@ -65,5 +67,6 @@ export function normalize(raw) {
     servicesOK: typeof raw.servicesOK === "boolean" ? raw.servicesOK : null,
     history: (Array.isArray(raw.history) ? raw.history : []).filter((point) => isNumber(point.t)).map((point) => ({ t: point.t * 1000, s: isNumber(point.s) ? point.s : null, w: isNumber(point.w) ? point.w : null })),
     daily: (Array.isArray(raw.daily) ? raw.daily : []).map(summaryOf).filter(Boolean),
+    loan: loanInfoOf(raw.loan),
   };
 }

@@ -40,13 +40,21 @@ extension UsageManager {
             return "Lien illisible : colle le lien complet affiché par « collecteur associer » (https://…/#v1.…)."
         }
         guard MobileUploader.endpoint(relay: pairing.relay, id: pairing.id) != nil else { return "Le relais doit être en https://." }
+        return beginLoan(guestName: guestName, share: share, endsAt: endsAt, relay: pairing.relay, guestVault: (pairing.id, pairing.key), now: now)
+    }
+
+    /// Enregistre un prêt (depuis les Réglages ou une commande du téléphone) : clés dans le magasin des secrets, le reste dans les préférences.
+    func beginLoan(guestName: String, share: Double, endsAt: Date, relay: URL, guestVault: (id: String, key: Data),
+                   viewVault: (id: String, key: Data)? = nil, now: Date = Date()) -> String? {
         guard endsAt > now else { return "La fin du prêt doit être dans le futur." }
-        guard AppSecrets.store.write(MobileCrypto.base64url(pairing.key), account: AppSecrets.loanKeyAccount) else {
+        guard AppSecrets.store.write(MobileCrypto.base64url(guestVault.key), account: AppSecrets.loanKeyAccount),
+              viewVault.map({ AppSecrets.store.write(MobileCrypto.base64url($0.key), account: AppSecrets.loanViewKeyAccount) }) ?? true else {
             return "Impossible d'enregistrer la clé du coffre (\(AppSecrets.storageLabel))."
         }
         loan = Loan(id: UUID().uuidString.lowercased(), guestName: guestName, share: min(max(share, Loan.shareRange.lowerBound), Loan.shareRange.upperBound),
-                    startsAt: now, endsAt: endsAt, relay: pairing.relay.absoluteString, vaultID: pairing.id)
+                    startsAt: now, endsAt: endsAt, relay: relay.absoluteString, vaultID: guestVault.id, viewVaultID: viewVault?.id)
         saveLoan()
+        lastGuestViewPublish = nil
         (guestReport, loanState, loanStatus) = (nil, nil, "")
         refreshLoan(now: now, force: true)
         return nil
@@ -54,9 +62,11 @@ extension UsageManager {
 
     /// Termine le prêt ici. La révocation de l'accès se fait sur claude.ai (Settings › Claude Code) : l'app ne peut pas la faire.
     func endLoan(now: Date = Date()) {
+        publishFinalGuestView(now: now)   // l'invité voit « Prêt terminé » au lieu d'une vue figée
         loan = nil
         (guestReport, loanState, loanStatus) = (nil, nil, "")
         AppSecrets.store.delete(account: AppSecrets.loanKeyAccount)
+        AppSecrets.store.delete(account: AppSecrets.loanViewKeyAccount)
         saveLoan()
         UserDefaults.standard.set(now, forKey: "loan_ended_at")   // point de départ de la vérification de révocation (étape 4)
     }
@@ -107,6 +117,10 @@ extension UsageManager {
             let state = LoanRules.state(loan: loan, tally: tally, since: since, now: now, reportAt: reportAt)
             self.loanState = state
             if self.loanAlertsEnabled { self.notifyLoan(LoanRules.alerts(loan: loan, state: state, now: now)) }
+            if loan.viewVaultID != nil {
+                let days = LoanAttribution.daily(samples: samples, guest: guestBuckets, owner: owner, from: since, to: end)
+                self.publishGuestViewIfDue(loan: loan, state: state, days: days, now: now)
+            }
         }
         Self.loanQueue.async {
             let owner = scanner.scan(directories: directories, since: since.addingTimeInterval(-600))

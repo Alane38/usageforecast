@@ -41,6 +41,7 @@ extension UsageManager {
         if lastDailyUpdate.map({ date.timeIntervalSince($0) >= 600 }) ?? true { refreshDailySummaries(from: historySamples) }
         sendMobileSnapshotIfEnabled(now: date)
         refreshLoan(now: date)
+        pollLoanCommands(now: date)
     }
 
     /// La prévision courante, telle que la lisent le statusline de Claude Code et le téléphone.

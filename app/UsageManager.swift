@@ -137,6 +137,8 @@ class UsageManager: ObservableObject {
     @Published var loanStatus = ""
     @Published var loanAlertsEnabled = true
     var lastLoanRefresh: Date? = nil
+    var lastLoanCommandPoll: Date? = nil
+    var lastGuestViewPublish: Date? = nil
     let transcriptScanner = TranscriptScanner()
 
     // MARK: Liaison avec l'app

@@ -57,6 +57,14 @@ Faits établis (vérifiés le 1er novembre 2026) :
    Pas encore : détection de l'usage de claude.ai par Alane (aujourd'hui, une hausse sans activité Claude Code est comptée à l'invité, estimée).
 3. Relais et PWA : code d'invitation court à usage unique (15 min), coffre de contrôle pour créer un prêt depuis le téléphone, vue de
    l'invité, onglet Prêt.
+   Fait. Le téléphone crée deux coffres pour l'invité (activité, lecture) et un code de 8 caractères (base 32 de Crockford, 40 bits).
+   Le code donne, par PBKDF2-SHA256 (200 000 itérations), l'identifiant de l'invitation sur le relais et sa clé : le relais ne garde
+   l'invitation chiffrée que 15 minutes et ne la rend qu'une fois (`PUT /v1/invite/<id>`, `POST /v1/invite/<id>/claim`). La commande
+   pour le Mac va dans un coffre de contrôle dérivé de l'appairage mobile (`HMAC(clé, "usageforecast/control")`) ; le Mac la lit
+   toutes les 5 minutes et ne l'applique qu'une fois. Le Mac publie la vue de l'invité (sa part, ses jours, la réserve restante,
+   jamais l'usage du propriétaire) au plus toutes les 15 minutes, et une dernière fois à la fin du prêt.
+   Limites : le retrait d'une invitation n'est pas atomique (lecture puis suppression : deux retraits simultanés pourraient réussir) ;
+   un prêt créé sur le Mac en collant le lien du collecteur n'a pas de vue d'invité (pas de code ni de coffre de lecture côté Mac).
 4. Révocation vérifiée et fin de prêt (effacement du coffre : nouvelle route `DELETE` du relais, protégée par le jeton d'écriture).
 
 ## Alternatives écartées

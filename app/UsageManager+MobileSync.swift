@@ -60,7 +60,8 @@ extension UsageManager {
             servicesOK: (services?.hasFetched ?? false) ? services?.indicator == "none" : nil,
             history: MobileSnapshot.decimate(historySamples), daily: Array(dailySummaries.suffix(MobileSnapshot.dailyDays)),
             plan: MobileSnapshot.planInfo(weekPlanForMobile(now: now)),
-            weekHistory: mobileWeekHistory(now: now), models: mobileModels(), extras: mobileExtraLines())
+            weekHistory: mobileWeekHistory(now: now), models: mobileModels(), extras: mobileExtraLines(),
+            loan: loan.map { LoanPublishing.info(loan: $0, state: loanState, report: guestReport, status: loanStatus, lastCommandID: loanLastCommandID, now: now) })
     }
 
     private func weekPlanForMobile(now: Date) -> DayPlan? {

@@ -64,6 +64,8 @@ func runLoanTests() {
     check(LoanRules.alerts(loan: loan, state: silent, now: twoDays, calendar: utc).contains { $0.title.hasPrefix("Collecteur de Sam muet") }, "alertes : collecteur jamais entendu après 7 h")
     check(LoanRules.alerts(loan: loan, state: over, now: loan.endsAt, calendar: utc).isEmpty, "alertes : plus rien une fois le prêt terminé")
 
+    runLoanSyncTests(loan: loan, start: start, samples: samples, guestBuckets: guestBuckets, ownerBuckets: ownerBuckets, utc: utc)
+
     // Journaux de ce Mac : même lecture que le collecteur.
     let line = #"{"type":"assistant","requestId":"r1","timestamp":"2026-11-01T10:02:00.000Z","message":{"id":"m1","model":"claude-opus-5-5","content":[{"type":"text","text":"PRIVE"}],"usage":{"input_tokens":10,"output_tokens":20,"cache_creation_input_tokens":30,"cache_read_input_tokens":40}}}"#
     let parsed = ClaudeTranscripts.parse(line: Substring(line))
@@ -76,4 +78,49 @@ func runLoanTests() {
     let home = URL(fileURLWithPath: "/Users/alane")
     check(ClaudeTranscripts.projectDirectories(environment: [:], home: home).map(\.path) == ["/Users/alane/.config/claude/projects", "/Users/alane/.claude/projects"], "journaux du Mac : emplacements par défaut")
     check(ClaudeTranscripts.projectDirectories(environment: ["CLAUDE_CONFIG_DIR": "/a, /b"], home: home).map(\.path) == ["/a/projects", "/b/projects"], "journaux du Mac : CLAUDE_CONFIG_DIR prioritaire")
+}
+
+/// Étape 3 : commandes du téléphone, vue de l'invité, résumé pour le téléphone, coffre de contrôle.
+func runLoanSyncTests(loan: Loan, start: Date, samples: [UsageSample], guestBuckets: [ActivityBucket], ownerBuckets: [ActivityBucket], utc: Calendar) {
+    // Commande produite par mobile/pwa/lib/loan.js (prepareLoan), telle que le téléphone la dépose.
+    let commandJSON = """
+    {"kind":"loan-command","version":1,"id":"6f1c2b9e-1d2a-4c3b-9a8e-7f6d5c4b3a21","action":"create","createdAt":"2026-11-01T15:00:00.000Z","guestName":"Sam","share":0.7,"endsAt":"2026-11-05T09:00:00.000Z","guestVault":{"id":"0123456789abcdef0123456789abcdef","key":"AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8"},"viewVault":{"id":"fedcba9876543210fedcba9876543210","key":"Hx4dHBsaGRgXFhUUExIREA8ODQwLCgkIBwYFBAMCAQA"}}
+    """
+    let command = LoanCommand.decode(Data(commandJSON.utf8))
+    if case let .create(name, share, endsAt, guestVault, viewVault)? = command?.action {
+        check(name == "Sam" && share == 0.7 && endsAt.timeIntervalSince1970 == 1_793_869_200, "commande du téléphone : prénom, part et fin lus")
+        check(guestVault.id == "0123456789abcdef0123456789abcdef" && viewVault.key.hasPrefix("Hx4d"), "commande du téléphone : les deux coffres lus")
+    } else {
+        check(false, "commande du téléphone : création reconnue")
+    }
+    check(LoanCommand.decode(Data(#"{"kind":"loan-command","version":1,"id":"x","action":"end","createdAt":"2026-11-01T15:00:00Z"}"#.utf8))?.action == .end, "commande du téléphone : fin reconnue")
+    check(LoanCommand.decode(Data(commandJSON.replacingOccurrences(of: "\"share\":0.7", with: "\"share\":1.5").utf8)) == nil, "commande du téléphone : part hors limites refusée")
+    check(LoanCommand.decode(Data(commandJSON.replacingOccurrences(of: "0123456789abcdef0123456789abcdef", with: "court").utf8)) == nil, "commande du téléphone : coffre mal formé refusé")
+    check(LoanCommand.decode(Data("{}".utf8)) == nil, "commande du téléphone : document vide refusé")
+
+    // Jour par jour : la somme des jours vaut le total (un intervalle à cheval sur minuit va au jour de son relevé de fin).
+    let end = start.addingTimeInterval(9000)
+    let days = LoanAttribution.daily(samples: samples, guest: guestBuckets, owner: ownerBuckets, from: start.addingTimeInterval(-86400), to: end, calendar: utc)
+    let total = LoanAttribution.tally(samples: samples, guest: guestBuckets, owner: ownerBuckets, from: start.addingTimeInterval(-86400), to: end).guest
+    check(abs(days.reduce(0) { $0 + $1.points } - total) < 0.0001 && days.count == 2, "vue de l'invité : jours dont la somme vaut le total")
+    check(days.first.map { $0.day.count == 10 && $0.day.hasPrefix("2027-01-1") } == true, "vue de l'invité : jours au format AAAA-MM-JJ")
+
+    let state = LoanRules.state(loan: loan, tally: LoanTally(guestMeasured: 35, guestEstimated: 3, ownerMeasured: 14), since: start,
+                                now: start.addingTimeInterval(3 * 86400), reportAt: nil)
+    let view = LoanPublishing.guestView(loan: loan, state: state, days: [(day: "2027-01-15", points: 6)], showsReserve: true, now: start.addingTimeInterval(3 * 86400))
+    let json = LoanPublishing.encode(view).map { String(decoding: $0, as: UTF8.self) } ?? ""
+    print("     vue de l'invité (vecteur pour mobile/pwa/test/loan.test.js) : \(json)")
+    check(json.contains(#""kind":"guest-view""#) && json.contains(#""reserveLeft":16"#) && json.contains(#""guestUsed":38"#), "vue de l'invité : document lisible par le téléphone, réserve restante 30 - 14 = 16")
+    check(!json.contains("ownerUsed") && !json.contains("ownerMeasured"), "vue de l'invité : l'usage du propriétaire n'en fait pas partie")
+    let hidden = LoanPublishing.guestView(loan: loan, state: state, days: [], showsReserve: false, now: start)
+    check(LoanPublishing.encode(hidden).map { !String(decoding: $0, as: UTF8.self).contains("reserveLeft") } == true, "vue de l'invité : réserve masquée si demandé")
+    let info = LoanPublishing.info(loan: loan, state: state, report: nil, status: "", lastCommandID: "c1", now: start.addingTimeInterval(86400))
+    check(info.active && info.guestUsed == 38 && info.ownerUsed == 14 && info.lastCommandID == "c1", "résumé pour le téléphone : part, usage de chacun et dernière commande appliquée")
+
+    #if canImport(CryptoKit)
+    // Même coffre de contrôle que mobile/pwa/lib/crypto.js (clé 0x00…0x1f).
+    let control = UsageManager.controlVault(for: SymmetricKey(data: Data((0..<32).map { UInt8($0) })))
+    check(control.id == "5eb8630571dc84b780e161b6770e21bd", "coffre de contrôle : même identifiant que le téléphone")
+    check(MobileCrypto.base64url(control.key.withUnsafeBytes { Data($0) }) == "WYnkzqQ3h3V4pt-UEed36U56vxWZghyPB2XK3kn1Xaw", "coffre de contrôle : même clé que le téléphone")
+    #endif
 }

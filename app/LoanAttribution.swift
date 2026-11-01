@@ -34,6 +34,25 @@ enum LoanAttribution {
         return (baseline.map { [$0] } ?? []) + inside
     }
 
+    /// Points de l'invité jour par jour (jours de `calendar`), du jour de `start` à celui de `end` : la somme vaut le total de `tally`.
+    static func daily(samples: [UsageSample], guest: [ActivityBucket], owner: [ActivityBucket], from start: Date, to end: Date,
+                      calendar: Calendar = .current) -> [(day: String, points: Double)] {
+        let format = DateFormatter()
+        format.calendar = calendar
+        format.timeZone = calendar.timeZone
+        format.locale = Locale(identifier: "en_US_POSIX")
+        format.dateFormat = "yyyy-MM-dd"
+        var result: [(day: String, points: Double)] = []
+        var dayStart = calendar.startOfDay(for: start)
+        while dayStart < end {
+            guard let next = calendar.date(byAdding: .day, value: 1, to: dayStart) else { break }
+            let tally = self.tally(samples: samples, guest: guest, owner: owner, from: max(dayStart, start), to: min(next, end))
+            result.append((day: format.string(from: dayStart), points: tally.guest))
+            dayStart = next
+        }
+        return result
+    }
+
     /// Chaque hausse entre deux relevés va à celui qui était actif ; aux deux, au prorata des tokens ; à personne, à l'invité (estimé).
     /// Une baisse (reset de la semaine) n'est pas une consommation : ignorée. `from` doit être au plus tôt le début de la semaine en cours.
     static func tally(samples: [UsageSample], guest: [ActivityBucket], owner: [ActivityBucket], from start: Date, to end: Date) -> LoanTally {

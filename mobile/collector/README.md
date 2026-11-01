@@ -11,7 +11,8 @@ les noms de projets, les chemins de fichiers. Un test le vérifie (`test/cycle.t
 ## Utilisation
 
 ```bash
-collecteur associer https://ton-relais.workers.dev     # crée un coffre et affiche le lien à transmettre au propriétaire
+collecteur associer https://ton-relais.workers.dev K7QM-4PZX   # avec le code donné par le propriétaire (onglet Prêt de son téléphone)
+collecteur associer https://ton-relais.workers.dev     # sans code : crée un coffre et affiche le lien à transmettre au propriétaire
 collecteur associer 'https://ton-relais.workers.dev/#v1.<id>.<clé>'   # ou : utilise le coffre donné par le propriétaire
 collecteur une-fois --essai     # montre ce qui serait envoyé, sans rien envoyer
 collecteur lancer               # tourne en continu
@@ -42,5 +43,6 @@ bun collector/collector.js une-fois --essai
 bun run build:collector                 # 5 exécutables autonomes (≈ 90 à 115 Mo : ils embarquent le runtime Bun) + SHA256SUMS
 ```
 
-Pas encore fait (ADR 003, étapes 2 à 4) : lecture du coffre par le Mac et attribution, code d'invitation court, vue de l'invité dans la PWA,
-révocation vérifiée, démarrage automatique avec la session.
+Avec un code, le collecteur affiche aussi le lien du **tableau de bord de l'invité** (l'application mobile, à ouvrir dans un navigateur).
+
+Pas encore fait (ADR 003, étape 4) : révocation vérifiée, démarrage automatique avec la session.

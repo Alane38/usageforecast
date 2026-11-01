@@ -12,6 +12,8 @@ struct Loan: Codable, Equatable {
     /// Adresse du relais et identifiant du coffre où le collecteur de l'invité dépose son activité.
     var relay: String
     var vaultID: String
+    /// Coffre de lecture de l'invité (prêt créé depuis le téléphone avec un code) : le Mac y publie sa vue. nil sinon.
+    var viewVaultID: String? = nil
 
     static let shareRange: ClosedRange<Double> = 0.1...0.9
 

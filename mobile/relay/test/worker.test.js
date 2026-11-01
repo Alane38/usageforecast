@@ -109,3 +109,32 @@ describe("application", () => {
     expect(response.headers.get("content-type")).toBe("application/json");
   });
 });
+
+describe("invitations de prêt", () => {
+  const withDelete = () => {
+    const kv = fakeKV();
+    kv.delete = async (key) => { kv.store.delete(key); };
+    return { VAULT: kv };
+  };
+
+  test("dépôt pour 15 minutes, retrait unique, puis introuvable", async () => {
+    const env = withDelete();
+    expect((await call(env, "PUT", `/v1/invite/${ID}`, { body: BLOB })).status).toBe(200);
+    expect(env.VAULT.store.get(`invite:${ID}`).ttl).toBe(900);
+    const claimed = await call(env, "POST", `/v1/invite/${ID}/claim`);
+    expect(claimed.status).toBe(200);
+    expect(await claimed.text()).toBe(BLOB);
+    expect((await call(env, "POST", `/v1/invite/${ID}/claim`)).status).toBe(404);
+  });
+
+  test("refus : second dépôt sur le même code, contenu non chiffré ou trop gros, mauvaise méthode, identifiant mal formé", async () => {
+    const env = withDelete();
+    await call(env, "PUT", `/v1/invite/${ID}`, { body: BLOB });
+    expect((await call(env, "PUT", `/v1/invite/${ID}`, { body: BLOB })).status).toBe(409);
+    expect((await call(env, "PUT", `/v1/invite/${OTHER_ID}`, { body: "pas du base64url !" })).status).toBe(400);
+    expect((await call(env, "PUT", `/v1/invite/${OTHER_ID}`, { body: "a".repeat(9000) })).status).toBe(413);
+    expect((await call(env, "GET", `/v1/invite/${ID}/claim`)).status).toBe(405);
+    expect((await call(env, "GET", `/v1/invite/${ID}`)).status).toBe(405);
+    expect((await call(env, "POST", "/v1/invite/xyz/claim")).status).toBe(405);   // identifiant mal formé : aucune route ne répond
+  });
+});

@@ -40,7 +40,7 @@ export function forgetPairing(dir) {
 }
 
 export function savePairing(dir, pairing) {
-  writeJson(dir, PAIRING_FILE, { relay: pairing.relay, id: pairing.id, key: pairing.key });
+  writeJson(dir, PAIRING_FILE, { relay: pairing.relay, id: pairing.id, key: pairing.key, ...(pairing.view ? { view: pairing.view } : {}) });
 }
 
 export function loadState(dir) {

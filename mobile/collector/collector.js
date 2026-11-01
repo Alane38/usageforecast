@@ -3,11 +3,13 @@
 // Lit les journaux de Claude Code de cette machine et envoie, chiffrés, les heures d'activité et les tokens par tranche de 5 minutes.
 import { homedir, platform as osPlatform } from "node:os";
 import { runCycle } from "./lib/cycle.js";
-import { linkOf, pairingFromInput } from "./lib/link.js";
+import { linkOf, pairingFromCode, pairingFromInput } from "./lib/link.js";
+import { pairingLink } from "../pwa/lib/crypto.js";
+import { formatCode, normalizeCode } from "../pwa/lib/loan.js";
 import { claudeProjectDirs, collectorConfigDir } from "./lib/paths.js";
 import { forgetPairing, loadPairing, loadState, savePairing, saveState } from "./lib/store.js";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.2.0";
 const LOOP_MS = 60 * 1000;
 
 const context = { env: process.env, home: homedir(), platform: osPlatform() };
@@ -20,6 +22,7 @@ function when(ms) {
 
 const HELP = `Collecteur UsageForecast ${VERSION}
 
+  associer <adresse-du-relais> <CODE>   utilise le code d'invitation donné par le propriétaire (15 min, une seule fois)
   associer <adresse-du-relais>   crée un coffre et affiche le lien à transmettre au propriétaire du compte
   associer <lien-d-association>  utilise le coffre que le propriétaire t'a donné
   lancer                         tourne en continu (un tour par minute, envoi seulement s'il y a de l'activité)
@@ -39,7 +42,15 @@ async function cycle({ dryRun = false, force = false } = {}) {
 
 async function main(args) {
   const [command, ...rest] = args;
-  if (command === "associer") {
+  if (command === "associer" && rest[1]) {
+    const outcome = await pairingFromCode(rest[0], rest[1]);
+    if (outcome.error) throw new Error(outcome.error);
+    savePairing(configDir, outcome.pairing);
+    const { invite } = outcome;
+    console.log(`Associé au prêt (code ${formatCode(normalizeCode(rest[1]))}) : ${Math.round(invite.share * 100)} % de la semaine jusqu'au ${invite.endsAt.toLocaleString("fr-FR")}.`);
+    console.log(`\nTon tableau de bord (ouvre-le dans ton navigateur, puis « Installer ») :\n${outcome.viewLink}\n`);
+    console.log("Lance ensuite : collecteur lancer");
+  } else if (command === "associer") {
     const outcome = pairingFromInput(rest[0]);
     if (outcome.error) throw new Error(outcome.error);
     savePairing(configDir, outcome.pairing);
@@ -66,12 +77,13 @@ async function main(args) {
     const last = Object.values(state.messages).reduce((max, record) => Math.max(max, record.t), 0);
     console.log([
       `Association : ${pairing ? `${pairing.relay}, coffre ${pairing.id.slice(0, 8)}…` : "aucune"}`,
+      pairing?.view ? `Tableau de bord : ${pairingLink(pairing.view, pairing.relay)}` : null,
       `Dernier envoi : ${when(state.lastPushAt)}${state.lastError ? ` (dernier échec : ${state.lastError})` : ""}`,
       `Dernière activité Claude Code vue : ${when(last)}`,
       `Envois aujourd'hui : ${state.pushesToday}`,
       `Journaux : ${dirs.join(", ")}`,
       `Configuration : ${configDir}`,
-    ].join("\n"));
+    ].filter(Boolean).join("\n"));
   } else if (command === "oublier") {
     forgetPairing(configDir);
     console.log("Association supprimée sur cette machine.");

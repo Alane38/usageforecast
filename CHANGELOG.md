@@ -8,8 +8,10 @@ Format : une section par version, la plus récente en haut.
 - **Prêt de quota** (ADR 003, étape 2 côté Mac). Réglages › **Prêt** : prêter une part de la limite hebdomadaire à une autre personne (curseur de 10 à 90 %, fin du prêt par défaut au prochain reset), en collant le lien affiché par son collecteur (`mobile/collector`, Windows, Linux ou macOS). Le popover montre un bloc « Prêt » : part de l'invité et ta réserve, prévision d'épuisement, provenance des chiffres (mesurés ou estimés) et fraîcheur du collecteur.
 - **Attribution** : chaque hausse de la semaine va à celui qui utilisait Claude Code (journaux de ce Mac et rapport chiffré du collecteur) ; aux deux, au prorata des tokens (hors lecture du cache), estimé ; à personne, à l'invité, estimé. La baisse du reset n'est jamais comptée.
 - **Alertes du prêt** : 80 % de sa part, dépassement prévu avant la fin du prêt, réserve entamée, collecteur muet depuis plus de 7 h. Chaque texte dit la limite, l'échéance et l'hypothèse.
+- **Prêt créé depuis le téléphone** (étape 3) : onglet **Prêt** de l'application mobile, avec un code d'invitation de 8 caractères valable 15 minutes et une seule fois ; l'invité le saisit dans son collecteur (`collecteur associer <relais> <CODE>`). Le Mac reçoit le prêt par un coffre de contrôle chiffré et le prend en charge dans les 5 minutes ; il termine aussi un prêt demandé depuis le téléphone.
+- **Vue de l'invité** : son collecteur affiche le lien de son tableau de bord (l'application mobile) avec sa part, ce qu'il lui reste, le rythme conseillé, la réserve du propriétaire et ses jours. Publiée par le Mac au plus toutes les 15 minutes, et une dernière fois à la fin (« Prêt terminé »).
 - Aperçu : `--demo --demo-loan` (options `--loan-guest`, `--loan-owner`, `--loan-silent`).
-- Tests : 29 nouveaux (rapport du collecteur lu et déchiffré tel que le JavaScript le produit, attribution, règles, journaux).
+- Tests : 41 en Swift (rapport du collecteur et commande du téléphone lus tels que le JavaScript les produit, attribution par jour, vue de l'invité, coffre de contrôle) et 15 en JavaScript (code, relais, vecteurs croisés).
 
 ## 1.19.1 : 30 octobre 2026
 

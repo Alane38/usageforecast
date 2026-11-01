@@ -73,6 +73,8 @@ struct MobileSnapshot: Codable, Equatable {
     var weekHistory: [HistoryPoint]? = nil
     var models: [ModelShare]? = nil
     var extras: [ExtraLine]? = nil
+    /// Prêt de quota en cours (ADR 003) ; absent sans prêt et dans les envois d'avant la 1.20.
+    var loan: LoanInfo? = nil
 
     /// Dernier relevé de chaque tranche de `bucket` secondes : une courbe de 24 h tient en 288 points au lieu de 1 440.
     static func decimate(_ samples: [UsageSample], bucket: TimeInterval = 300) -> [HistoryPoint] {

@@ -11,9 +11,12 @@ import { homeView } from "./views/home.js";
 import { statsView } from "./views/stats.js";
 import { settingsView } from "./views/settings.js";
 import { onboardingView } from "./views/onboarding.js";
+import { loanView } from "./views/loan.js";
+import { guestView } from "./views/guest.js";
+import { createLoan as sendLoan, endLoan as sendEnd, pendingSettled } from "../lib/loan-actions.js";
 
 const store = createStore();
-const state = { pairing: store.pairing(), prefs: store.prefs(), snapshot: null, checkedAt: null, stamp: null, status: "loading", message: "", tab: "home", now: Date.now(), installable: false, refreshing: false };
+const state = { pairing: store.pairing(), prefs: store.prefs(), loanPending: store.loanPending(), loanMessage: "", snapshot: null, checkedAt: null, stamp: null, status: "loading", message: "", tab: "home", now: Date.now(), installable: false, refreshing: false };
 let installEvent = null;
 let failures = 0;
 let timer = null;
@@ -67,7 +70,12 @@ function renderChrome() {
   const label = !state.snapshot ? (state.status === "loading" ? "Chargement…" : "Aucune donnée")
     : offline ? `Hors ligne · ${age(state.now - state.snapshot.dataAt)}` : stale ? `Données anciennes · ${age(state.now - state.snapshot.dataAt)}` : `À jour · ${age(state.now - state.snapshot.dataAt)}`;
   syncChip.append(h("span", { class: "dot" + (offline ? " error" : stale ? " stale" : "") }), label);
-  for (const button of nav.querySelectorAll("button")) button.setAttribute("aria-current", button.dataset.tab === state.tab ? "page" : "false");
+  // Un invité ne voit que sa part : ni les statistiques du propriétaire, ni l'onglet Prêt.
+  const guest = state.snapshot?.kind === "guest";
+  for (const button of nav.querySelectorAll("button")) {
+    button.setAttribute("aria-current", button.dataset.tab === state.tab ? "page" : "false");
+    button.hidden = guest && (button.dataset.tab === "stats" || button.dataset.tab === "loan");
+  }
 }
 
 function buildScreen(actions) {
@@ -77,13 +85,15 @@ function buildScreen(actions) {
     return [h("section", { class: "card empty" }, h("h2", null, state.status === "loading" ? "Chargement…" : "En attente du Mac"),
       h("p", { class: "muted" }, state.message || "Les données arrivent dès que ton Mac les envoie."))];
   }
+  if (state.snapshot.kind === "guest") return guestView(state);
+  if (state.tab === "loan") return loanView(state, actions);
   return (state.tab === "stats" ? statsView : homeView)(state);
 }
 
 function render() {
   state.now = Date.now();
   renderChrome();
-  const actions = { refresh, forget, setTheme, install, pair };
+  const actions = { refresh, forget, setTheme, install, pair, createLoan, endLoan };
   let nodes;
   try {
     nodes = buildScreen(actions);
@@ -116,6 +126,7 @@ async function refresh() {
   state.message = result.message ?? "";
   if (result.status === "updated") {
     state.snapshot = result.snapshot;
+    if (state.loanPending && pendingSettled(state.loanPending, result.snapshot.loan)) setLoanPending(null);
     state.stamp = result.stamp;
     store.saveSnapshot({ raw: result.raw, stamp: result.stamp, checkedAt: state.checkedAt });
     failures = 0;
@@ -149,10 +160,32 @@ function pair(input) {
   return { ok: true };
 }
 
+function setLoanPending(pending) {
+  state.loanPending = pending;
+  store.saveLoanPending(pending);
+}
+
+async function createLoan({ guestName, share, endsAt, button }) {
+  button.disabled = true;
+  button.textContent = "Création du code…";
+  const result = await sendLoan({ pairing: state.pairing, guestName, share, endsAt });
+  state.loanMessage = result.error ?? "";
+  if (result.ok) setLoanPending(result.pending);
+  render();
+}
+
+async function endLoan() {
+  if (!confirm("Terminer le prêt ? As-tu retiré son accès sur claude.ai (Settings › Claude Code) ?")) return;
+  const result = await sendEnd({ pairing: state.pairing });
+  state.loanMessage = result.error ?? "";
+  if (result.ok) setLoanPending(result.pending);
+  render();
+}
+
 function forget() {
   if (!confirm("Oublier cet appareil ? Il faudra rescanner le code du Mac.")) return;
   store.forget();
-  Object.assign(state, { pairing: null, snapshot: null, stamp: null, checkedAt: null, status: "loading", message: "", tab: "home" });
+  Object.assign(state, { pairing: null, snapshot: null, stamp: null, checkedAt: null, status: "loading", message: "", tab: "home", loanPending: null, loanMessage: "" });
   clearTimeout(timer);
   render();
 }

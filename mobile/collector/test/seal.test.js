@@ -59,3 +59,24 @@ describe("association", () => {
     expect(a.key).not.toBe(b.key);
   });
 });
+
+describe("association par code d'invitation", () => {
+  test("le code créé sur le téléphone donne au collecteur son coffre et le lien de son tableau de bord", async () => {
+    const { prepareLoan } = await import("../../pwa/lib/loan.js");
+    const { pairingFromCode } = await import("../lib/link.js");
+    const { default: worker } = await import("../../relay/src/worker.js");
+    const store = new Map();
+    const VAULT = {
+      async get(key) { return store.get(key) ?? null; },
+      async put(key, value) { store.set(key, value); },
+      async delete(key) { store.delete(key); },
+    };
+    const fetchImpl = (url, init) => worker.fetch(new Request(url, init), { VAULT });
+    const prepared = await prepareLoan({ guestName: "Sam", share: 0.7, endsAt: new Date("2026-11-05T09:00:00Z"), newPairing, iterations: 1000 });
+    await fetchImpl(`https://relais.example/v1/invite/${prepared.inviteID}`, { method: "PUT", body: prepared.invite });
+    const outcome = await pairingFromCode("https://relais.example/", prepared.code, { fetchImpl, iterations: 1000 });
+    expect(outcome.pairing).toEqual({ relay: "https://relais.example", ...prepared.command.guestVault, view: prepared.command.viewVault });
+    expect(parsePairing(outcome.viewLink)).toEqual(prepared.command.viewVault);
+    expect((await pairingFromCode("http://relais.example", prepared.code, { fetchImpl })).error).toContain("https");
+  });
+});
