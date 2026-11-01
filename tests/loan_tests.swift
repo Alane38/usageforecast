@@ -120,9 +120,9 @@ func runLoanSyncTests(loan: Loan, start: Date, samples: [UsageSample], guestBuck
 
     #if canImport(CryptoKit)
     // Même coffre de contrôle que mobile/pwa/lib/crypto.js (clé 0x00…0x1f).
-    let control = UsageManager.controlVault(for: SymmetricKey(data: Data((0..<32).map { UInt8($0) })))
+    let control = MobileCrypto.controlVault(for: SymmetricKey(data: Data((0..<32).map { UInt8($0) })))
     check(control.id == "5eb8630571dc84b780e161b6770e21bd", "coffre de contrôle : même identifiant que le téléphone")
-    check(MobileCrypto.base64url(control.key.withUnsafeBytes { Data($0) }) == "WYnkzqQ3h3V4pt-UEed36U56vxWZghyPB2XK3kn1Xaw", "coffre de contrôle : même clé que le téléphone")
+    check(MobileCrypto.base64url(MobileCrypto.keyData(control.key)) == "WYnkzqQ3h3V4pt-UEed36U56vxWZghyPB2XK3kn1Xaw", "coffre de contrôle : même clé que le téléphone")
     #endif
 }
 

@@ -13,19 +13,11 @@ extension UsageManager {
 
     var loanLastCommandID: String? { UserDefaults.standard.string(forKey: Self.lastCommandStorageName) }
 
-    /// Coffre de contrôle : identifiant = 16 premiers octets de HMAC(clé, "usageforecast/control"), clé = HMAC(clé, "usageforecast/control-key").
-    /// Mêmes calculs que `controlPairing` de mobile/pwa/lib/crypto.js.
-    static func controlVault(for key: SymmetricKey) -> (id: String, key: SymmetricKey) {
-        let id = HMAC<SHA256>.authenticationCode(for: Data("usageforecast/control".utf8), using: key)
-        let derived = HMAC<SHA256>.authenticationCode(for: Data("usageforecast/control-key".utf8), using: key)
-        return (Data(id).prefix(16).map { String(format: "%02x", $0) }.joined(), SymmetricKey(data: Data(derived)))
-    }
-
     func pollLoanCommands(now: Date = Date()) {
         guard mobileSyncEnabled, !isProbeRun, let relay = mobileRelay, let pairing = mobilePairing(create: false) else { return }
         if let last = lastLoanCommandPoll, now.timeIntervalSince(last) < Self.commandPollInterval { return }
         lastLoanCommandPoll = now
-        let control = Self.controlVault(for: pairing.cipherKey)
+        let control = MobileCrypto.controlVault(for: pairing.cipherKey)
         guard let url = MobileUploader.endpoint(relay: relay, id: control.id) else { return }
         var request = URLRequest(url: url)
         request.cachePolicy = .reloadIgnoringLocalCacheData
