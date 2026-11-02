@@ -22,10 +22,10 @@ extension UsageManager {
         var request = URLRequest(url: url)
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.timeoutInterval = 20
-        URLSession.shared.dataTask(with: request) { data, response, _ in
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, _ in
             guard (response as? HTTPURLResponse)?.statusCode == 200, let data, let blob = String(data: data, encoding: .utf8),
                   let plain = MobileCrypto.open(blob, key: control.key), let command = LoanCommand.decode(plain) else { return }
-            DispatchQueue.main.async { [weak self] in self?.apply(command, relay: relay, now: Date()) }
+            DispatchQueue.main.async { self?.apply(command, relay: relay, now: Date()) }
         }.resume()
     }
 
