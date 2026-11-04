@@ -828,4 +828,30 @@ let fittedTexts = [PlanLabels.fitting(reportedTexts[0], short: "avant", blockWid
 check(PlanLabels.place(texts: fittedTexts, blockWidths: reportedWidths, gap: 2).map(\.index) == [0, 1, 2, 3, 4], "étiquettes : cas du 1/11, les cinq étiquettes sont affichées, dont « auj. »")
 runLoanTests()
 
+
+// Crédits à deux lots (réponse réelle de la Console, 4/11/2026) : seul le lot qui expire est annoncé, pas tout le solde.
+let twoLotsCredits = Data("""
+{"amount":15010,"currency":"USD","tranches":[],"promo_tranches":[
+ {"remaining_amount_minor_units":5009,"currency":"USD","expires_at":"2026-11-05T00:00:00Z","granted_amount_minor_units":10000,"granted_at":"2026-10-18T20:15:36.082000Z","name":"API credit (Max)"},
+ {"remaining_amount_minor_units":10000,"currency":"USD","expires_at":"2026-12-05T00:00:00Z","granted_amount_minor_units":10000,"granted_at":"2026-11-02T23:57:38.818000Z","name":"API credit (Max)"}],
+ "next_expires_at":"2026-11-05T00:00:00Z"}
+""".utf8)
+let twoLotsSpend = Data("{\"amount\":4991,\"resets_at\":\"2026-12-01T00:00:00Z\"}".utf8)
+let twoLotsNow = ISO8601DateFormatter().date(from: "2026-11-04T12:46:00Z")!
+let twoLots = ConsoleBalance.parse(credits: twoLotsCredits, spend: twoLotsSpend, now: twoLotsNow)
+check(twoLots?.balance == 150.1 && twoLots?.lots.count == 2, "crédits 2 lots : solde total et deux lots lus")
+check(twoLots?.expiringAmount(now: twoLotsNow) == 50.09, "crédits 2 lots : 50,09 $ expirent à la prochaine échéance, pas 150,10 $")
+check(twoLots?.laterLots(now: twoLotsNow).map(\.remaining) == [100], "crédits 2 lots : 100 $ expirent plus tard")
+check(twoLots?.dailyBudget(now: twoLotsNow) == 50.09, "crédits 2 lots : budget par jour calculé sur le lot qui expire")
+var parisCalendar = Calendar(identifier: .gregorian); parisCalendar.timeZone = TimeZone(identifier: "Europe/Paris")!
+check(twoLots.map { CreditsSummary.expiryText($0, now: twoLotsNow, calendar: parisCalendar) } == "50,09 $ expirent dans 12 h · puis 100 $ le 5 déc.", "crédits 2 lots : texte « 50,09 $ expirent dans 12 h · puis 100 $ le 5 déc. »")
+let farFirst = ConsoleBalance(balance: 150, currency: "USD", spentThisPeriod: nil, periodResetsAt: nil, nextExpiry: later(5 * 24 * 60), promoGranted: 200, promoName: "API credit (Max)",
+                              lots: [CreditLot(remaining: 50, expiresAt: later(5 * 24 * 60)), CreditLot(remaining: 100, expiresAt: later(35 * 24 * 60))])
+check(CreditsSummary.expiryText(farFirst, now: alertNow, calendar: parisCalendar).hasPrefix("50 $ expirent dans 5 j (≈ 10 $ par jour) · puis 100 $ le "), "crédits 2 lots : à plus d'un jour, budget par jour du lot qui expire")
+let tomorrowLots = ConsoleBalance(balance: 150.1, currency: "USD", spentThisPeriod: nil, periodResetsAt: nil, nextExpiry: later(12 * 60), promoGranted: 200, promoName: "API credit (Max)",
+                                  lots: [CreditLot(remaining: 50.09, expiresAt: later(12 * 60)), CreditLot(remaining: 100, expiresAt: later(31 * 24 * 60))])
+check(run(context { $0.credits = tomorrowLots }).first?.title == "Crédits API : 50,09 $ expirent demain", "alerte : le montant annoncé est celui du lot qui expire")
+check(run(context { $0.credits = ConsoleBalance(balance: 150, currency: "USD", spentThisPeriod: nil, periodResetsAt: nil, nextExpiry: later(12 * 60), promoGranted: 200, promoName: nil,
+                                                lots: [CreditLot(remaining: 5, expiresAt: later(12 * 60)), CreditLot(remaining: 145, expiresAt: later(31 * 24 * 60))]) }).isEmpty, "alerte : 5 $ seulement à perdre -> rien (le reste est loin)")
+
 exit(failures == 0 ? 0 : 1)

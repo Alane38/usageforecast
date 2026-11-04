@@ -51,6 +51,16 @@ extension AppDelegate {
 
     private func fillDemoConsoleBalance() {
         let sixteenDaysAhead = AppClock.now.addingTimeInterval(16 * 86400)
+        if DevFlags.isSet("--demo-two-lots") {
+            // Cas réel du 4/11/2026 : un lot de 50,09 $ expire dans quelques heures, un second de 100 $ dans un mois.
+            let soon = AppClock.now.addingTimeInterval(11 * 3600)
+            let later = AppClock.now.addingTimeInterval(31 * 86400)
+            usageManager.consoleBalance = ConsoleBalance(balance: 150.09, currency: "USD", spentThisPeriod: 49.91,
+                                                         periodResetsAt: later, nextExpiry: soon, promoGranted: 200, promoName: "API credit (Max)",
+                                                         lots: [CreditLot(remaining: 50.09, expiresAt: soon), CreditLot(remaining: 100, expiresAt: later)])
+            usageManager.consoleUpdatedAt = AppClock.now.addingTimeInterval(-120)
+            return
+        }
         usageManager.consoleBalance = ConsoleBalance(balance: 87.5, currency: "USD", spentThisPeriod: 12.5,
                                                      periodResetsAt: sixteenDaysAhead, nextExpiry: sixteenDaysAhead,
                                                      promoGranted: 100, promoName: "API credit (Max 5x)")

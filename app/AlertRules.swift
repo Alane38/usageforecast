@@ -129,10 +129,10 @@ enum AlertRules {
     }
 
     private static func creditsExpiring(_ c: AlertContext) -> [AlertMessage] {
-        guard let balance = c.credits, balance.balance >= 10, let days = balance.daysLeft(now: c.now),
+        guard let balance = c.credits, balance.expiringAmount(now: c.now) >= 10, let days = balance.daysLeft(now: c.now),
               let threshold = [1, 2, 5].first(where: { days <= $0 }), (balance.promoUsedFraction ?? 0) < 0.9,
               let expiry = balance.nextExpiry else { return [] }
-        let amount = CreditsSummary.money(balance.balance, balance.currency)
+        let amount = CreditsSummary.money(balance.expiringAmount(now: c.now), balance.currency)
         let spent = balance.spentThisPeriod.map { CreditsSummary.money($0, balance.currency) } ?? "0 $"
         return [AlertMessage(kind: .creditsExpiring, key: "credits-\(day(expiry))-d\(threshold)",
                              title: "Crédits API : \(amount) expirent \(days <= 1 ? "demain" : "dans \(days) j")",

@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## Non publié (après 1.19.2)
+
+### Corrigé
+- **Crédits API : l'expiration ne concerne que le lot qui expire, pas tout le solde.** Avec deux lots (50,09 $ qui expirent le 5/11 et 100 $ le 5/12), l'app annonçait « 150,1 $ expirent dans 1 j · ≈ 150,1 $ par jour ». Elle lit maintenant chaque lot (`remaining_amount_minor_units`, `expires_at`) et affiche « 50,09 $ expirent dans 11 h · puis 100 $ le 5 déc. » ; le budget par jour et l'alerte d'expiration portent sur le lot qui expire (une alerte « 5 $ à perdre » ne se déclenche pas si le reste est loin). Texte en heures sous 24 h. Testé sur la réponse réelle de la Console. Nouvelle scène « credits-deux-lots ».
+
 ## 1.20.0 : 1er novembre 2026
 
 ### Ajouté

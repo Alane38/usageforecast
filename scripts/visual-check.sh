@@ -32,6 +32,7 @@ SCENES=(
   "planning-depasse:--layout gauges --used-today 40 --open-plan"
   "planning-clair:--layout gauges --used-today 21 --open-plan --light"
   "planning-debut-de-semaine:--layout gauges --weekly 1 --used-today 1 --weekly-left 424800 --open-plan"
+  "credits-deux-lots:--layout gauges --demo-two-lots"
   "planning-fin-de-semaine:--layout gauges --weekly 20 --used-today 13 --weekly-left 525600 --open-plan"
   "stats-sombre:--settings --tab stats --height 1250"
   "stats-clair-mercredi:--settings --tab stats --height 1250 --light --demo-day-shift 3"
