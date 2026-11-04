@@ -55,17 +55,60 @@ struct BudgetHero: View {
 struct CreditsCard: View {
     let summary: CreditsSummary
 
-    var body: some View { row.popoverCard() }
-
-    private var row: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
                 Text(summary.title).font(.system(size: 13, weight: .medium))
-                Text(summary.detail).captionStyle().lineLimit(2)
+                Spacer()
+                Text(summary.valueText).font(.system(size: 15, weight: .medium))
             }
-            Spacer()
-            Text(summary.valueText).font(.system(size: 15, weight: .medium))
+            if summary.lots.isEmpty { Text(summary.detail).captionStyle().lineLimit(2) } else { CreditsLotsView(summary: summary) }
         }
+        .popoverCard()
+    }
+}
+
+/// Crédits en plusieurs lots : une barre segmentée (largeur = part du solde, le premier à expirer en orange)
+/// puis une ligne par lot avec son échéance.
+struct CreditsLotsView: View {
+    let summary: CreditsSummary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            bar
+            ForEach(Array(summary.lots.enumerated()), id: \.offset) { _, lot in line(lot) }
+            if let hint = dailyHint { Text(hint).captionStyle() }
+        }
+    }
+
+    private func color(_ lot: CreditsSummary.LotRow) -> Color { lot.isNext ? .orange : Color.accentColor.opacity(0.55) }
+
+    private var bar: some View {
+        GeometryReader { proxy in
+            HStack(spacing: 2) {
+                ForEach(Array(summary.lots.enumerated()), id: \.offset) { _, lot in
+                    RoundedRectangle(cornerRadius: 3).fill(color(lot)).frame(width: max(proxy.size.width * lot.share - 2, 4))
+                }
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(height: 8)
+        .accessibilityHidden(true)
+    }
+
+    private func line(_ lot: CreditsSummary.LotRow) -> some View {
+        HStack(spacing: 6) {
+            Circle().fill(color(lot)).frame(width: 7, height: 7)
+            Text(lot.amountText).font(.system(size: 12, weight: .medium))
+            Text(lot.whenText).captionStyle()
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// « ≈ 4,55 $ par jour pour ne rien perdre » : repris du détail, qui le met entre parenthèses.
+    private var dailyHint: String? {
+        guard let open = summary.detail.range(of: "(≈ "), let close = summary.detail.range(of: " par jour)") else { return nil }
+        return "≈ " + summary.detail[open.upperBound..<close.lowerBound] + " par jour pour ne rien perdre"
     }
 }
 

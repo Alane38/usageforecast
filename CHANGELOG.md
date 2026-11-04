@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## Non publié
+
+### Amélioré
+- **Crédits API en plusieurs lots : un affichage par lot.** Barre segmentée (largeur = part du solde, le premier lot à expirer en orange) puis une ligne par lot avec son montant et son échéance, au lieu d'une seule barre et d'une phrase. Dispositions jauges et cartes.
+
 ## 1.19.3 : 4 novembre 2026
 
 ### Corrigé

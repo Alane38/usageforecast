@@ -843,6 +843,10 @@ check(twoLots?.laterLots(now: twoLotsNow).map(\.remaining) == [100], "crédits 2
 check(twoLots?.dailyBudget(now: twoLotsNow) == 50.09, "crédits 2 lots : budget par jour calculé sur le lot qui expire")
 var parisCalendar = Calendar(identifier: .gregorian); parisCalendar.timeZone = TimeZone(identifier: "Europe/Paris")!
 check(twoLots.map { CreditsSummary.expiryText($0, now: twoLotsNow, calendar: parisCalendar) } == "50,09 $ expirent dans 12 h · puis 100 $ le 5 déc.", "crédits 2 lots : texte « 50,09 $ expirent dans 12 h · puis 100 $ le 5 déc. »")
+let twoLotRows = twoLots.map { CreditsSummary.lotRows($0, now: twoLotsNow, calendar: parisCalendar) } ?? []
+check(twoLotRows.map(\.amountText) == ["50,09 $", "100 $"] && twoLotRows.map(\.isNext) == [true, false], "crédits 2 lots : une ligne par lot, le premier à expirer en tête")
+check(twoLotRows.map(\.whenText) == ["expire dans 12 h", "le 5 déc."], "crédits 2 lots : échéance de chaque ligne")
+check(abs(twoLotRows.map(\.share).reduce(0, +) - 1) < 0.001, "crédits 2 lots : les parts de la barre font le solde entier")
 let farFirst = ConsoleBalance(balance: 150, currency: "USD", spentThisPeriod: nil, periodResetsAt: nil, nextExpiry: later(5 * 24 * 60), promoGranted: 200, promoName: "API credit (Max)",
                               lots: [CreditLot(remaining: 50, expiresAt: later(5 * 24 * 60)), CreditLot(remaining: 100, expiresAt: later(35 * 24 * 60))])
 check(CreditsSummary.expiryText(farFirst, now: alertNow, calendar: parisCalendar).hasPrefix("50 $ expirent dans 5 j (≈ 10 $ par jour) · puis 100 $ le "), "crédits 2 lots : à plus d'un jour, budget par jour du lot qui expire")

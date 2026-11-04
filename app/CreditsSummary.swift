@@ -7,6 +7,18 @@ struct CreditsSummary: Equatable {
     /// Part consommée, de 0 à 1.
     let usedFraction: Double
     let detail: String
+    /// Un lot par ligne quand la Console en donne plusieurs (sinon vide : la carte garde sa ligne unique).
+    var lots: [LotRow] = []
+
+    struct LotRow: Equatable {
+        let amountText: String
+        /// « expire dans 11 h », « le 5 déc. » : l'échéance de ce lot.
+        let whenText: String
+        /// Part du solde total, de 0 à 1 : largeur du segment dans la barre.
+        let share: Double
+        /// Le lot qui expire en premier : mis en avant.
+        let isNext: Bool
+    }
 
     static func make(console: ConsoleBalance?, manual: ApiCredits?, now: Date = AppClock.now) -> CreditsSummary? {
         if let console { return fromConsole(console, now: now) }
@@ -18,7 +30,25 @@ struct CreditsSummary: Equatable {
         return CreditsSummary(title: balance.promoName.map { "Crédits API · \(shortName($0))" } ?? "Crédits API",
                               valueText: money(balance.balance, balance.currency),
                               usedFraction: balance.promoUsedFraction ?? 0,
-                              detail: expiryText(balance, now: now))
+                              detail: expiryText(balance, now: now),
+                              lots: lotRows(balance, now: now))
+    }
+
+    /// Une ligne par échéance distincte, de la plus proche à la plus lointaine ; vide s'il n'y a qu'une échéance.
+    static func lotRows(_ balance: ConsoleBalance, now: Date, calendar: Calendar = .current) -> [LotRow] {
+        let later = balance.laterLots(now: now)
+        guard !later.isEmpty, balance.balance > 0, let next = balance.nextExpiry else { return [] }
+        let hours = Int(ceil(next.timeIntervalSince(now) / 3600))
+        let nextWhen = hours <= 24 ? "expire dans \(max(hours, 1)) h" : "expire dans \(balance.daysLeft(now: now) ?? 0) j"
+        let first = balance.expiringAmount(now: now)
+        var rows = [LotRow(amountText: money(first, balance.currency), whenText: nextWhen,
+                           share: min(first / balance.balance, 1), isNext: true)]
+        for lot in later {
+            let when = shortDate(lot.expiresAt, calendar: calendar).map { "le \($0)" } ?? "sans échéance"
+            rows.append(LotRow(amountText: money(lot.remaining, balance.currency), whenText: when,
+                               share: min(lot.remaining / balance.balance, 1), isNext: false))
+        }
+        return rows
     }
 
     /// « Expirent dans 6 j · ≈ 16,67 $ par jour » pour un seul échéancier ; avec plusieurs lots, seul le plus proche est annoncé :

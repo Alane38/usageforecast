@@ -78,8 +78,12 @@ struct CreditsGaugeRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             LabelledValue(label: summary.title, value: summary.valueText)
-            GaugeBar(used: summary.usedFraction * 100, projected: nil, expected: nil, tone: .ok)
-            Text(summary.detail).captionStyle()
+            if summary.lots.isEmpty {
+                GaugeBar(used: summary.usedFraction * 100, projected: nil, expected: nil, tone: .ok)
+                Text(summary.detail).captionStyle()
+            } else {
+                CreditsLotsView(summary: summary)
+            }
         }
     }
 }
