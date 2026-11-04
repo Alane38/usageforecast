@@ -188,16 +188,31 @@ struct WeekCompareView: View {
     }
 }
 
-/// Petit rond avec un « ? » : le détail s'affiche au survol, pour ne pas alourdir l'écran de texte.
+/// Petit rond avec un « ? » : le détail s'ouvre dans une bulle au survol ou au clic (le clic la garde ouverte),
+/// pour ne pas alourdir l'écran de texte. Une infobulle système (`.help`) ne s'affichait pas dans la fenêtre des réglages.
 struct HelpBadge: View {
     let text: String
+    @State private var hovering = false
+    @State private var pinned = false
 
     var body: some View {
-        Image(systemName: "questionmark.circle")
+        Image(systemName: pinned || hovering ? "questionmark.circle.fill" : "questionmark.circle")
             .font(.system(size: 13))
             .foregroundColor(.secondary)
-            .help(text)
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+            .onTapGesture { pinned.toggle() }
+            .popover(isPresented: Binding(get: { pinned || hovering }, set: { if !$0 { pinned = false; hovering = false } }),
+                     arrowEdge: .bottom) {
+                Text(text)
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(width: 300, alignment: .leading)
+                    .padding(12)
+            }
+            .accessibilityElement()
             .accessibilityLabel("Détail de la fiabilité")
             .accessibilityHint(text)
+            .accessibilityAddTraits(.isButton)
     }
 }
