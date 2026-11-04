@@ -4,6 +4,8 @@ import Foundation
 struct CreditLot: Equatable {
     let remaining: Double
     let expiresAt: Date?
+    /// Montant accordé au départ (« 50,09 $ sur 100 $ »), quand l'API le donne.
+    var granted: Double? = nil
 }
 
 /// Solde des crédits API (Console), lu sur `platform.claude.com/api/organizations/{org}/prepaid/credits`
@@ -89,7 +91,8 @@ struct ConsoleBalance: Equatable {
     private static func lots(in root: [String: Any]) -> [CreditLot] {
         ["tranches", "promo_tranches"].flatMap { (root[$0] as? [[String: Any]]) ?? [] }.compactMap { lot in
             guard let remaining = number(lot["remaining_amount_minor_units"]) else { return nil }
-            return CreditLot(remaining: remaining / 100, expiresAt: date(lot["expires_at"]))
+            return CreditLot(remaining: remaining / 100, expiresAt: date(lot["expires_at"]),
+                             granted: number(lot["granted_amount_minor_units"]).map { $0 / 100 })
         }
     }
 

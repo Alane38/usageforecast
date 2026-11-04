@@ -5,7 +5,7 @@ Format : une section par version, la plus récente en haut.
 ## Non publié
 
 ### Amélioré
-- **Crédits API en plusieurs lots : un affichage par lot.** Barre segmentée (largeur = part du solde, le premier lot à expirer en orange) puis une ligne par lot avec son montant et son échéance, au lieu d'une seule barre et d'une phrase. Dispositions jauges et cartes.
+- **Crédits API en plusieurs lots : un affichage par lot, comme la Console.** Une ligne par lot avec un anneau (part restante), « 50,09 $ sur 100 $ » et la date d'expiration en UTC ; le premier lot à expirer est en orange. Dispositions jauges et cartes.
 
 ## 1.19.3 : 4 novembre 2026
 

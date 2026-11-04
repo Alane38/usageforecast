@@ -55,7 +55,7 @@ extension AppDelegate {
             let later = AppClock.now.addingTimeInterval(31 * 86400)
             usageManager.consoleBalance = ConsoleBalance(balance: 150.09, currency: "USD", spentThisPeriod: 49.91,
                                                          periodResetsAt: later, nextExpiry: soon, promoGranted: 200, promoName: "API credit (Max)",
-                                                         lots: [CreditLot(remaining: 50.09, expiresAt: soon), CreditLot(remaining: 100, expiresAt: later)])
+                                                         lots: [CreditLot(remaining: 50.09, expiresAt: soon, granted: 100), CreditLot(remaining: 100, expiresAt: later, granted: 100)])
             usageManager.consoleUpdatedAt = AppClock.now.addingTimeInterval(-120)
             return
         }

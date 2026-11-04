@@ -11,11 +11,12 @@ struct CreditsSummary: Equatable {
     var lots: [LotRow] = []
 
     struct LotRow: Equatable {
+        /// « 50,09 $ sur 100 $ » (ou le seul reste quand le montant accordé est inconnu).
         let amountText: String
-        /// « expire dans 11 h », « le 5 déc. » : l'échéance de ce lot.
+        /// « expire le 05/11/2026 » : date en UTC, comme sur la Console.
         let whenText: String
-        /// Part du solde total, de 0 à 1 : largeur du segment dans la barre.
-        let share: Double
+        /// Part restante du lot, de 0 à 1 : l'anneau. nil si le montant accordé est inconnu.
+        let remainingFraction: Double?
         /// Le lot qui expire en premier : mis en avant.
         let isNext: Bool
     }
@@ -34,21 +35,27 @@ struct CreditsSummary: Equatable {
                               lots: lotRows(balance, now: now))
     }
 
-    /// Une ligne par échéance distincte, de la plus proche à la plus lointaine ; vide s'il n'y a qu'une échéance.
-    static func lotRows(_ balance: ConsoleBalance, now: Date, calendar: Calendar = .current) -> [LotRow] {
-        let later = balance.laterLots(now: now)
-        guard !later.isEmpty, balance.balance > 0, let next = balance.nextExpiry else { return [] }
-        let hours = Int(ceil(next.timeIntervalSince(now) / 3600))
-        let nextWhen = hours <= 24 ? "expire dans \(max(hours, 1)) h" : "expire dans \(balance.daysLeft(now: now) ?? 0) j"
-        let first = balance.expiringAmount(now: now)
-        var rows = [LotRow(amountText: money(first, balance.currency), whenText: nextWhen,
-                           share: min(first / balance.balance, 1), isNext: true)]
-        for lot in later {
-            let when = shortDate(lot.expiresAt, calendar: calendar).map { "le \($0)" } ?? "sans échéance"
-            rows.append(LotRow(amountText: money(lot.remaining, balance.currency), whenText: when,
-                               share: min(lot.remaining / balance.balance, 1), isNext: false))
+    /// Une ligne par lot, du plus proche au plus lointain, comme le tableau de la Console ; vide s'il n'y a qu'une échéance.
+    static func lotRows(_ balance: ConsoleBalance, now: Date) -> [LotRow] {
+        guard !balance.laterLots(now: now).isEmpty, let next = balance.nextExpiry else { return [] }
+        let sorted = balance.lots.filter { $0.remaining > 0 }
+            .sorted { ($0.expiresAt ?? .distantFuture) < ($1.expiresAt ?? .distantFuture) }
+        return sorted.map { lot in
+            let left = money(lot.remaining, balance.currency)
+            let amount = lot.granted.map { "\(left) sur \(money($0, balance.currency))" } ?? left
+            let when = utcDate(lot.expiresAt).map { "expire le \($0)" } ?? "sans échéance"
+            let fraction = lot.granted.flatMap { $0 > 0 ? min(lot.remaining / $0, 1) : nil }
+            return LotRow(amountText: amount, whenText: when, remainingFraction: fraction, isNext: lot.expiresAt == next)
         }
-        return rows
+    }
+
+    private static func utcDate(_ date: Date?) -> String? {
+        guard let date else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "fr_FR")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "dd/MM/yyyy"
+        return f.string(from: date)
     }
 
     /// « Expirent dans 6 j · ≈ 16,67 $ par jour » pour un seul échéancier ; avec plusieurs lots, seul le plus proche est annoncé :

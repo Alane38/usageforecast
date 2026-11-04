@@ -68,39 +68,37 @@ struct CreditsCard: View {
     }
 }
 
-/// Crédits en plusieurs lots : une barre segmentée (largeur = part du solde, le premier à expirer en orange)
-/// puis une ligne par lot avec son échéance.
+/// Crédits en plusieurs lots, à la manière du tableau de la Console : un anneau (part restante), « reste sur accordé »
+/// et la date d'expiration ; le premier lot à expirer est en orange.
 struct CreditsLotsView: View {
     let summary: CreditsSummary
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            bar
+        VStack(alignment: .leading, spacing: 8) {
             ForEach(Array(summary.lots.enumerated()), id: \.offset) { _, lot in line(lot) }
             if let hint = dailyHint { Text(hint).captionStyle() }
         }
     }
 
-    private func color(_ lot: CreditsSummary.LotRow) -> Color { lot.isNext ? .orange : Color.accentColor.opacity(0.55) }
+    private func color(_ lot: CreditsSummary.LotRow) -> Color { lot.isNext ? .orange : Color.accentColor }
 
-    private var bar: some View {
-        GeometryReader { proxy in
-            HStack(spacing: 2) {
-                ForEach(Array(summary.lots.enumerated()), id: \.offset) { _, lot in
-                    RoundedRectangle(cornerRadius: 3).fill(color(lot)).frame(width: max(proxy.size.width * lot.share - 2, 4))
-                }
-                Spacer(minLength: 0)
-            }
+    private func ring(_ lot: CreditsSummary.LotRow) -> some View {
+        ZStack {
+            Circle().stroke(Color.secondaryText.opacity(0.25), lineWidth: 3)
+            Circle().trim(from: 0, to: lot.remainingFraction ?? 1)
+                .stroke(color(lot), style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(-90))
         }
-        .frame(height: 8)
+        .frame(width: 16, height: 16)
         .accessibilityHidden(true)
     }
 
     private func line(_ lot: CreditsSummary.LotRow) -> some View {
-        HStack(spacing: 6) {
-            Circle().fill(color(lot)).frame(width: 7, height: 7)
+        HStack(spacing: 8) {
+            ring(lot)
             Text(lot.amountText).font(.system(size: 12, weight: .medium))
-            Text(lot.whenText).captionStyle()
+            Spacer(minLength: 4)
+            Text(lot.whenText).captionStyle().foregroundColor(lot.isNext ? .orange : Color.secondaryText)
         }
         .accessibilityElement(children: .combine)
     }
