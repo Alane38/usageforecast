@@ -2,7 +2,7 @@
 
 Format : une section par version, la plus récente en haut.
 
-## Non publié
+## 1.19.5 : 4 novembre 2026
 
 ### Amélioré
 - **Statistiques : ce qui est consommé pendant que l'app est fermée est rattrapé.** La hausse du pourcentage hebdomadaire entre deux relevés (Mac éteint, app fermée) est ajoutée aux totaux, répartie sur les jours concernés, au lieu d'être perdue. Elle ne s'applique qu'aux jours enregistrés à partir de cette version (les anciens n'ont pas de premier et dernier relevé).
