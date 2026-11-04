@@ -4,6 +4,10 @@ Format : une section par version, la plus récente en haut.
 
 ## Non publié
 
+### Amélioré
+- **Statistiques : ce qui est consommé pendant que l'app est fermée est rattrapé.** La hausse du pourcentage hebdomadaire entre deux relevés (Mac éteint, app fermée) est ajoutée aux totaux, répartie sur les jours concernés, au lieu d'être perdue. Elle ne s'applique qu'aux jours enregistrés à partir de cette version (les anciens n'ont pas de premier et dernier relevé).
+- **Statistiques : le détail de la fiabilité passe dans un « ? » au survol** (jours fiables, jours incomplets, prochain niveau) ; l'en-tête perd deux lignes de texte.
+
 ### Corrigé
 - **Jauges : le trait blanc (temps écoulé) n'apparaît qu'une fois 5 % de la fenêtre écoulés**, comme la projection. Avant, il s'affichait seul en début de fenêtre et laissait croire à un dépassement que le statut ne confirmait pas.
 

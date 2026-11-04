@@ -6,7 +6,8 @@ import SwiftUI
 struct StatsTab: View {
     @ObservedObject var usageManager: UsageManager
 
-    private var summaries: [DailySummary] { usageManager.dailySummaries }
+    /// Les jours enregistrés, avec en plus ce qui a été consommé pendant que l'app était fermée.
+    private var summaries: [DailySummary] { DailyInsights.withGapPoints(usageManager.dailySummaries) }
 
     var body: some View { content }
 
@@ -51,20 +52,16 @@ struct StatsTab: View {
     // MARK: - En-tête et chiffres clés
 
     private var header: some View {
-        let confidence = DailyInsights.confidence(summaries)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Ton rythme").font(.title3.weight(.semibold))
-                Spacer()
-                Text("Fiabilité").font(.caption).foregroundColor(.secondary)
-                ConfidenceMeter(level: confidence)
-                Text(confidence.label).font(.system(size: 12, weight: .medium))
-            }
-            Text(confidence.detail).font(.caption).foregroundColor(.secondary)
-            if let first = summaries.first {
-                Text("\(summaries.count) jour\(summaries.count > 1 ? "s" : "") enregistré\(summaries.count > 1 ? "s" : "") depuis le \(StatsStyle.dayLabel(DailyInsights.date(fromStamp: first.day) ?? Date())).")
-                    .font(.caption).foregroundColor(.secondary)
-            }
+        let recorded = usageManager.dailySummaries
+        let confidence = DailyInsights.confidence(recorded)
+        let since = recorded.first.flatMap { DailyInsights.date(fromStamp: $0.day) }.map(StatsStyle.dayLabel)
+        return HStack(alignment: .firstTextBaseline) {
+            Text("Ton rythme").font(.title3.weight(.semibold))
+            Spacer()
+            Text("Fiabilité").font(.caption).foregroundColor(.secondary)
+            ConfidenceMeter(level: confidence)
+            Text(confidence.label).font(.system(size: 12, weight: .medium))
+            HelpBadge(text: DailyInsights.confidenceExplanation(recorded, since: since))
         }
     }
 
@@ -188,5 +185,19 @@ struct WeekCompareView: View {
     private func deltaText(_ delta: Double, previous: Double) -> String {
         let percent = previous > 0 ? " (\(delta >= 0 ? "+" : "−")\(Int((abs(delta) / previous * 100).rounded())) %)" : ""
         return delta == 0 ? "Identique à la semaine précédente." : "\(delta > 0 ? "+" : "−")\(StatsStyle.points(abs(delta)))\(percent) par rapport à la semaine précédente."
+    }
+}
+
+/// Petit rond avec un « ? » : le détail s'affiche au survol, pour ne pas alourdir l'écran de texte.
+struct HelpBadge: View {
+    let text: String
+
+    var body: some View {
+        Image(systemName: "questionmark.circle")
+            .font(.system(size: 13))
+            .foregroundColor(.secondary)
+            .help(text)
+            .accessibilityLabel("Détail de la fiabilité")
+            .accessibilityHint(text)
     }
 }

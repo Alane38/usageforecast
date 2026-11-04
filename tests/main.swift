@@ -626,6 +626,35 @@ try? FileManager.default.removeItem(at: dailyFile)
 func dailyFixture(_ day: String, _ used: Double, samples: Int = 1000, hours: [Int] = [9]) -> DailySummary {
     DailySummary(day: day, weeklyUsed: used, sessionUsed: used * 2, peakSession: 40, activeHours: hours, samples: samples)
 }
+func dailyFixtureWeek(reliable: Int, incomplete: Int) -> [DailySummary] {
+    (0..<(reliable + incomplete)).map { dailyFixture(String(format: "2026-10-%02d", $0 + 1), 10, samples: $0 < reliable ? 1000 : 50) }
+}
+// Rattrapage des trous : ce qui est consommé entre deux relevés (app fermée) est ajouté aux totaux.
+func linked(_ day: String, used: Double, first: Double, last: Double, samples: Int = 1000) -> DailySummary {
+    DailySummary(day: day, weeklyUsed: used, sessionUsed: 0, peakSession: 0, activeHours: [], samples: samples, firstWeekly: first, lastWeekly: last)
+}
+let gapDays = [linked("2026-10-27", used: 10, first: 20, last: 30),
+               linked("2026-10-30", used: 2, first: 38, last: 40),   // 8 points consommés app fermée, sur 28, 29 et 30
+               linked("2026-10-31", used: 1, first: 41, last: 42)]   // 1 point passé à minuit
+let gapAdjusted = DailyInsights.withGapPoints(gapDays, calendar: utc)
+check(gapAdjusted.map(\.day) == ["2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31"], "trous : les jours sans relevé apparaissent")
+check(gapAdjusted.map(\.samples) == [1000, 0, 0, 1000, 1000], "trous : un jour rattrapé garde 0 relevé (jamais fiable)")
+let gapRounded: [Double] = gapAdjusted.map { ($0.weeklyUsed * 100).rounded() / 100 }
+check(gapRounded == [10, 2.67, 2.67, 4.67, 2], "trous : 8 points répartis sur 3 jours, 1 point à minuit ajouté")
+let gapTotal: Double = gapAdjusted.map(\.weeklyUsed).reduce(0, +)
+check(abs(gapTotal - 22) < 0.001, "trous : le total de la période est exact (13 observés + 9 rattrapés)")
+let resetDays = [linked("2026-11-03", used: 5, first: 80, last: 90), linked("2026-11-04", used: 2, first: 3, last: 5)]
+check(DailyInsights.withGapPoints(resetDays, calendar: utc).map(\.weeklyUsed) == [5, 2], "trous : une baisse est une remise à zéro, rien n'est ajouté")
+let oldDays = [dailyFixture("2026-10-19", 22), dailyFixture("2026-10-21", 18)]
+check(DailyInsights.withGapPoints(oldDays, calendar: utc) == oldDays, "trous : les jours sans premier/dernier relevé ne changent pas")
+let linkSamples = DailyStats.summarize([UsageSample(time: midnightBase.timeIntervalSince1970 + 3600, session: 1, weekly: 40),
+                                         UsageSample(time: midnightBase.timeIntervalSince1970 + 7200, session: 2, weekly: 45)], calendar: utc)
+check(linkSamples.first?.firstWeekly == 40 && linkSamples.first?.lastWeekly == 45, "résumé : premier et dernier pourcentage hebdomadaire conservés")
+check(DataConfidence.next(afterReliableDays: 12)?.level == .good && DataConfidence.next(afterReliableDays: 12)?.missingDays == 2, "fiabilité : 12 jours fiables, niveau suivant dans 2 jours")
+check(DataConfidence.next(afterReliableDays: 30) == nil, "fiabilité : rien après le niveau le plus haut")
+let explained = DailyInsights.confidenceExplanation(dailyFixtureWeek(reliable: 12, incomplete: 4), since: "lun. 19/10")
+check(explained.contains("16 jours enregistrés depuis le lun. 19/10, dont 12 fiables.") && explained.contains("4 incomplets") && explained.contains("dans 2 jours fiables de plus"), "fiabilité : le détail du « ? » donne jours fiables, incomplets et prochain niveau")
+
 var insightFixture: [DailySummary] = []
 for d in 28...30 { insightFixture.append(dailyFixture("2026-09-\(d)", Double(d), hours: d == 28 ? [9, 20] : [9])) }
 for d in 1...18 {

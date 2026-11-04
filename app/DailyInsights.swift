@@ -64,6 +64,16 @@ enum DataConfidence: Equatable {
         }
     }
 
+    /// Niveau suivant et nombre de jours fiables qui manquent pour l'atteindre ; nil au niveau le plus haut.
+    static func next(afterReliableDays days: Int) -> (level: DataConfidence, missingDays: Int)? {
+        switch days {
+        case ..<3: return (.building, 3 - days)
+        case ..<14: return (.good, 14 - days)
+        case ..<28: return (.solid, 28 - days)
+        default: return nil
+        }
+    }
+
     var detail: String {
         switch self {
         case .veryLow: return "Les moyennes par jour de la semaine apparaissent à partir de 3 jours identiques observés."
@@ -168,5 +178,47 @@ enum DailyInsights {
 
     static func confidence(_ summaries: [DailySummary]) -> DataConfidence {
         DataConfidence(reliableDays: summaries.filter(isReliable).count)
+    }
+
+    /// Ce que le « ? » de l'en-tête détaille : jours fiables, jours incomplets et prochain niveau.
+    static func confidenceExplanation(_ summaries: [DailySummary], since: String?) -> String {
+        let reliable = summaries.filter(isReliable).count
+        let incomplete = summaries.count - reliable
+        var lines = [confidence(summaries).detail]
+        lines.append("\(summaries.count) jour\(summaries.count > 1 ? "s" : "") enregistré\(summaries.count > 1 ? "s" : "")"
+                     + (since.map { " depuis le \($0)" } ?? "") + ", dont \(reliable) fiable\(reliable > 1 ? "s" : "").")
+        if incomplete > 0 {
+            lines.append("\(incomplete) incomplet\(incomplete > 1 ? "s" : "") : moins de 5 h de relevés (app fermée ou Mac éteint). "
+                         + "Ce qui a été consommé entre deux relevés est quand même ajouté aux totaux.")
+        }
+        if let next = DataConfidence.next(afterReliableDays: reliable) {
+            lines.append("Niveau « \(next.level.label) » dans \(next.missingDays) jour\(next.missingDays > 1 ? "s" : "") fiable\(next.missingDays > 1 ? "s" : "") de plus.")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// Rattrape ce que les relevés n'ont pas vu : la hausse du pourcentage hebdomadaire entre le dernier relevé d'un jour et le premier
+    /// du jour enregistré suivant a eu lieu pendant que l'app était fermée. Elle est répartie à parts égales sur les jours qui séparent
+    /// les deux (un jour sans aucun relevé apparaît alors avec 0 relevé). Une baisse est une remise à zéro : rien n'est ajouté.
+    static func withGapPoints(_ summaries: [DailySummary], calendar: Calendar = .current) -> [DailySummary] {
+        let sorted = summaries.sorted { $0.day < $1.day }
+        var byDay = Dictionary(sorted.map { ($0.day, $0) }, uniquingKeysWith: { _, latest in latest })
+        var previous: (date: Date, last: Double)?
+        for summary in sorted {
+            guard let date = date(fromStamp: summary.day, calendar: calendar) else { previous = nil; continue }
+            defer { previous = summary.lastWeekly.map { (date, $0) } }
+            guard let first = summary.firstWeekly, let before = previous, first > before.last else { continue }
+            let span = max(calendar.dateComponents([.day], from: before.date, to: date).day ?? 1, 1)
+            let share = (first - before.last) / Double(span)
+            for offset in 1...span {
+                guard let missing = calendar.date(byAdding: .day, value: offset, to: before.date) else { continue }
+                let key = DailyStats.stamp(for: missing, calendar: calendar)
+                let base = byDay[key] ?? DailySummary(day: key, weeklyUsed: 0, sessionUsed: 0, peakSession: 0, activeHours: [], samples: 0)
+                byDay[key] = DailySummary(day: key, weeklyUsed: base.weeklyUsed + share, sessionUsed: base.sessionUsed,
+                                          peakSession: base.peakSession, activeHours: base.activeHours, samples: base.samples,
+                                          firstWeekly: base.firstWeekly, lastWeekly: base.lastWeekly)
+            }
+        }
+        return byDay.values.sorted { $0.day < $1.day }
     }
 }

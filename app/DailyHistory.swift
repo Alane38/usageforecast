@@ -14,6 +14,10 @@ struct DailySummary: Codable, Equatable {
     let activeHours: [Int]
     /// Nombre de relevés ce jour-là (environ un par minute : mesure la couverture, l'app ne note rien quand elle est fermée).
     let samples: Int
+    /// Premier et dernier pourcentage hebdomadaire relevés ce jour-là : ils relient les jours entre eux, pour retrouver ce qui a été
+    /// consommé pendant que l'app était fermée. Absents des jours enregistrés avant cet ajout.
+    var firstWeekly: Double? = nil
+    var lastWeekly: Double? = nil
 }
 
 /// Calculs purs sur les résumés quotidiens.
@@ -48,7 +52,8 @@ enum DailyStats {
             }
             return DailySummary(day: day, weeklyUsed: weekly, sessionUsed: session,
                                 peakSession: daySamples.compactMap(\.session).max() ?? 0,
-                                activeHours: hours.sorted(), samples: daySamples.count)
+                                activeHours: hours.sorted(), samples: daySamples.count,
+                                firstWeekly: daySamples.compactMap(\.weekly).first, lastWeekly: daySamples.compactMap(\.weekly).last)
         }
     }
 
