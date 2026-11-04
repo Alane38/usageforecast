@@ -2,24 +2,10 @@
 
 Format : une section par version, la plus récente en haut.
 
-## Non publié (après 1.19.2)
+## 1.19.3 : 4 novembre 2026
 
 ### Corrigé
 - **Crédits API : l'expiration ne concerne que le lot qui expire, pas tout le solde.** Avec deux lots (50,09 $ qui expirent le 5/11 et 100 $ le 5/12), l'app annonçait « 150,1 $ expirent dans 1 j · ≈ 150,1 $ par jour ». Elle lit maintenant chaque lot (`remaining_amount_minor_units`, `expires_at`) et affiche « 50,09 $ expirent dans 11 h · puis 100 $ le 5 déc. » ; le budget par jour et l'alerte d'expiration portent sur le lot qui expire (une alerte « 5 $ à perdre » ne se déclenche pas si le reste est loin). Texte en heures sous 24 h. Testé sur la réponse réelle de la Console. Nouvelle scène « credits-deux-lots ».
-
-## 1.20.0 : 1er novembre 2026
-
-### Ajouté
-- **Prêt de quota** (ADR 003, étape 2 côté Mac). Réglages › **Prêt** : prêter une part de la limite hebdomadaire à une autre personne (curseur de 10 à 90 %, fin du prêt par défaut au prochain reset), en collant le lien affiché par son collecteur (`mobile/collector`, Windows, Linux ou macOS). Le popover montre un bloc « Prêt » : part de l'invité et ta réserve, prévision d'épuisement, provenance des chiffres (mesurés ou estimés) et fraîcheur du collecteur.
-- **Attribution** : chaque hausse de la semaine va à celui qui utilisait Claude Code (journaux de ce Mac et rapport chiffré du collecteur) ; aux deux, au prorata des tokens (hors lecture du cache), estimé ; à personne, à l'invité, estimé. La baisse du reset n'est jamais comptée.
-- **Alertes du prêt** : 80 % de sa part, dépassement prévu avant la fin du prêt, réserve entamée, collecteur muet depuis plus de 7 h. Chaque texte dit la limite, l'échéance et l'hypothèse.
-- **Prêt créé depuis le téléphone** (étape 3) : onglet **Prêt** de l'application mobile, avec un code d'invitation de 8 caractères valable 15 minutes et une seule fois ; l'invité le saisit dans son collecteur (`collecteur associer <relais> <CODE>`). Le Mac reçoit le prêt par un coffre de contrôle chiffré et le prend en charge dans les 5 minutes ; il termine aussi un prêt demandé depuis le téléphone.
-- **Vue de l'invité** : son collecteur affiche le lien de son tableau de bord (l'application mobile) avec sa part, ce qu'il lui reste, le rythme conseillé, la réserve du propriétaire et ses jours. Publiée par le Mac au plus toutes les 15 minutes, et une dernière fois à la fin (« Prêt terminé »).
-- **Révocation vérifiée** (étape 4) : à la fin d'un prêt, le Mac efface le coffre de l'invité sur le relais et surveille la semaine pendant 48 h. À partir de 2 points pris sans Claude Code sur ce Mac : alerte « Activité inexpliquée après la fin du prêt » (toujours active), avec le chemin pour tout déconnecter sur claude.ai. Affichée dans le popover, Réglages › Prêt et l'onglet Prêt du téléphone.
-- **Collecteur 0.3.0** : s'arrête seul quand le prêt est terminé ; `collecteur demarrage-auto` le lance à chaque ouverture de session (Linux, macOS, Windows), `demarrage-auto retirer` l'enlève.
-- **Release du collecteur** : workflow `release-collector.yml` (tag `collector-vX.Y.Z`) et `scripts/bump-collector.sh` ; journal propre dans `mobile/collector/CHANGELOG.md`. Le Mac ignore cette série (test ajouté).
-- Aperçu : `--demo --demo-revocation [watching|clear|suspicious]`, et `--demo --demo-loan` (options `--loan-guest`, `--loan-owner`, `--loan-silent`).
-- Tests : 41 en Swift (rapport du collecteur et commande du téléphone lus tels que le JavaScript les produit, attribution par jour, vue de l'invité, coffre de contrôle) et 15 en JavaScript (code, relais, vecteurs croisés).
 
 ## 1.19.2 : 1er novembre 2026
 

@@ -129,21 +129,6 @@ class UsageManager: ObservableObject {
     /// Démonstrations et essais uniquement : remplace l'identifiant et la clé réels.
     var mobilePairingOverride: MobilePairing? = nil
 
-    // MARK: Prêt de quota (ADR 003) : une part de la semaine prêtée à une autre personne
-
-    @Published var loan: Loan? = nil
-    @Published var loanState: LoanState? = nil
-    @Published var guestReport: GuestReport? = nil
-    @Published var loanStatus = ""
-    @Published var loanAlertsEnabled = true
-    var lastLoanRefresh: Date? = nil
-    var lastLoanCommandPoll: Date? = nil
-    @Published var revocationWatch: RevocationWatch? = nil
-    @Published var revocationStatus: RevocationStatus? = nil
-    var lastRevocationCheck: Date? = nil
-    var lastGuestViewPublish: Date? = nil
-    let transcriptScanner = TranscriptScanner()
-
     // MARK: Liaison avec l'app
 
     var statusItem: NSStatusItem?
@@ -154,7 +139,7 @@ class UsageManager: ObservableObject {
         AppSecrets.migrateDevFilesToKeychain()
         // Ordre significatif : les réglages se chargent après les secrets et l'historique.
         let restoreSteps = [loadHistory, loadAlertState, loadSessionCookie,
-                            loadConsoleCookie, loadSettings, loadLoan, checkAccessibilityStatus]
+                            loadConsoleCookie, loadSettings, checkAccessibilityStatus]
         restoreSteps.forEach { $0() }
     }
 }

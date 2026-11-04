@@ -49,9 +49,6 @@ struct SettingsView: View {
             MobileTab(usageManager: usageManager)
                 .tabItem { Label("Mobile", systemImage: "iphone") }
                 .tag("mobile")
-            LoanTab(usageManager: usageManager)
-                .tabItem { Label("Prêt", systemImage: "person.2") }
-                .tag("loan")
             AlertsTab(usageManager: usageManager, statusManager: statusManager)
                 .tabItem { Label("Alertes", systemImage: "bell") }
                 .tag("alerts")
