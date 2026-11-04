@@ -2,7 +2,7 @@
 
 Format : une section par version, la plus récente en haut.
 
-## Non publié
+## 1.19.4 : 4 novembre 2026
 
 ### Amélioré
 - **Crédits API en plusieurs lots : un affichage par lot, comme la Console.** Une ligne par lot avec un anneau (part restante), « 50,09 $ sur 100 $ » et la date d'expiration en UTC ; le premier lot à expirer est en orange. Dispositions jauges et cartes.
