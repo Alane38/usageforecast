@@ -35,7 +35,7 @@ struct GaugeRow: View {
         VStack(alignment: .leading, spacing: 5) {
             LabelledValue(label: title, value: "\(percent) %")
             GaugeBar(used: Double(percent), projected: forecast?.projectedPercent,
-                     expected: forecast?.expectedPercent, tone: tone)
+                     expected: forecast?.projectedPercent == nil ? nil : forecast?.expectedPercent, tone: tone)
             paceLine
             notes
         }

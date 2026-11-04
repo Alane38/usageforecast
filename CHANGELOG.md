@@ -2,6 +2,11 @@
 
 Format : une section par version, la plus récente en haut.
 
+## Non publié
+
+### Corrigé
+- **Jauges : le trait blanc (temps écoulé) n'apparaît qu'une fois 5 % de la fenêtre écoulés**, comme la projection. Avant, il s'affichait seul en début de fenêtre et laissait croire à un dépassement que le statut ne confirmait pas.
+
 ## 1.19.4 : 4 novembre 2026
 
 ### Amélioré
